@@ -5,7 +5,8 @@ GeoAnalyze is a Python package designed to streamline geoprocessing by handling 
 
 * File operations
 
-    - Deleting files of the same names in a folder, irrespective of extensions.
+    - Deleting files of the same name in a folder, irrespective of extensions.
+    - Tranferring files of the same name, irrespective of extensions, from the source folder to the destination folder.
  
 ## Roadmap
 
@@ -42,6 +43,7 @@ For detailed information, see the [documentation](http://geoanalyze.readthedocs.
 | --- | --- |
 | **PyPI**| ![PyPI - Version](https://img.shields.io/pypi/v/GeoAnalyze) ![PyPI - Status](https://img.shields.io/pypi/status/GeoAnalyze) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/GeoAnalyze) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/GeoAnalyze) |
 | **GitHub** | ![GitHub last commit](https://img.shields.io/github/last-commit/debpal/GeoAnalyze) [![flake8](https://github.com/debpal/GeoAnalyze/actions/workflows/linting.yml/badge.svg)](https://github.com/debpal/GeoAnalyze/actions/workflows/linting.yml) [![mypy](https://github.com/debpal/GeoAnalyze/actions/workflows/typing.yml/badge.svg)](https://github.com/debpal/GeoAnalyze/actions/workflows/typing.yml) [![pytest](https://github.com/debpal/GeoAnalyze/actions/workflows/testing.yml/badge.svg)](https://github.com/debpal/GeoAnalyze/actions/workflows/testing.yml) |
+| **Codecov** | [![codecov](https://codecov.io/gh/debpal/GeoAnalyze/graph/badge.svg?token=9OW3TRHI7C)](https://codecov.io/gh/debpal/GeoAnalyze)  |
 | **Read** _the_ **Docs** | [![Documentation Status](https://readthedocs.org/projects/geoanalyze/badge/?version=latest)](https://geoanalyze.readthedocs.io/en/latest/?badge=latest) |
 | **PePy** | ![Pepy Total Downloads](https://img.shields.io/pepy/dt/GeoAnalyze) |
 | **License** | ![GitHub License](https://img.shields.io/github/license/debpal/GeoAnalyze) |
