@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "GeoAnalyze"
+description = "A Python package designed to provide toolkits for geospatial analysis."
+authors = [
+  { name="Debasish Pal", email="bestdebasish@gmail.com" },
+]
+dependencies = []
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+	"Development Status :: 1 - Planning",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: OS Independent",
+	"Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+	"Topic :: Scientific/Engineering :: GIS",
+	"Topic :: Scientific/Engineering :: Hydrology"
+]
+dynamic = ["version"]
+keywords = [
+	"Raster",
+    "Shapefile",
+	"Geoprocessing",
+    "Analysis"
+]
+
+
+[project.urls]
+"Homepage" = "https://github.com/debpal/GeoAnalyze"
+
+[tool.setuptools.dynamic]
+version = {attr = "GeoAnalyze.__version__"}
+
+
+[tool.pytest.ini_options]
+addopts = "-rA -Werror --cov=GeoAnalyze --cov-report=html:cov_GeoAnalyze --cov-report=term -s"
+testpaths = [
+    "tests"
+]
+
+
+[tool.mypy]
+files = [
+    "GeoAnalyze"
+]
+ignore_missing_imports = true
+strict = true
