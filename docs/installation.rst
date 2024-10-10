@@ -9,12 +9,12 @@ Below are the steps for installing the package using different methods.
 Create a Python environment
 -----------------------------
 
-Suppose your environment name is **env_name**, and you can create it by using the following steps through Anaconda distribution.
+Suppose your environment name is `env_ga`, and you can create it by using the following steps through Anaconda distribution.
 
 .. code-block:: console
     
-    conda create --name env_name
-    conda activate my_env
+    conda create --name env_ga
+    conda activate env_ga
     conda install pip
 
 
@@ -39,8 +39,8 @@ Install from source code in editable mode
 --------------------------------------------
 
 For developers who want to modify the source code or contribute to the package, it is recommended to install in editable mode.
-Navigate to your directory with the **env_name** Python environemnt activated, and run the following commands. 
-This allows you to make changes to the source code, with immediate reflection in the **env_name** environment without requiring reinstallation.
+Navigate to your directory with the `env_ga` Python environemnt activated, and run the following commands. 
+This allows you to make changes to the source code, with immediate reflection in the `env_ga` environment without requiring reinstallation.
 
 .. code-block:: console
 
