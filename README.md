@@ -6,7 +6,7 @@ GeoAnalyze is a Python package designed to streamline geoprocessing by handling 
 * File operations
 
     - Deleting files of the same name in a folder, irrespective of extensions.
-    - Tranferring files of the same name, irrespective of extensions, from the source folder to the destination folder.
+    - Transferring files of the same name, irrespective of extensions, from the source folder to the destination folder.
  
 ## Roadmap
 
