@@ -38,3 +38,8 @@ jobs:
         export PYTHONPATH=$(pwd)
         pytest --cov=GeoAnalyze --cov-report=xml  # Run tests and generate coverage report in XML format
 
+    - name: Upload coverage to Codecov  # Upload coverage report to Codecov
+      uses: codecov/codecov-action@v4.2.0
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}  # This secret token should be added in your repository settings
+
