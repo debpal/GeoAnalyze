@@ -1,4 +1,5 @@
 import os
+import shutil
 
 
 class File:
@@ -55,5 +56,60 @@ class File:
             )
 
         output = f'List of deleted files: {delete_files}.'
+
+        return output
+
+    def transfer_by_name(
+        self,
+        src_folder: str,
+        dst_folder: str,
+        file_names: list[str]
+    ) -> str:
+
+        '''
+        Transfer files of the same name irrespective of extensions from
+        the source folder to the destination folder.
+
+        Parameters
+        ----------
+        src_folder : str
+            Path of the source folder.
+
+        dst_folder : str
+            Path of the destination folder.
+
+        file_names : list
+            List of file names (without extension) to transfer.
+
+        Returns
+        -------
+        str
+            File names that were transferred.
+        '''
+
+        src_contents = map(
+            lambda x: os.path.join(src_folder, x), os.listdir(src_folder)
+        )
+
+        src_paths = filter(
+            lambda x: os.path.isfile(x), src_contents
+        )
+
+        transfer_paths = filter(
+            lambda x: os.path.split(x)[-1].split('.')[0] in file_names, src_paths
+        )
+
+        transfer_files = list(
+            map(
+                lambda x: os.path.split(x)[-1], transfer_paths
+            )
+        )
+
+        for i in transfer_files:
+            shutil.copy2(
+                os.path.join(src_folder, i), os.path.join(dst_folder, i)
+            )
+
+        output = f'List of transferred files: {transfer_files}.'
 
         return output
