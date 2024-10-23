@@ -29,12 +29,14 @@ keywords = [
 	"Raster",
     "Shapefile",
 	"Geoprocessing",
-    "Analysis"
+    "Watershed",
+    "Delineation"
 ]
 
 
 [project.urls]
 "Homepage" = "https://github.com/debpal/GeoAnalyze"
+"Documentation" = "http://GeoAnalyze.readthedocs.io/"
 
 [tool.setuptools.dynamic]
 version = {attr = "GeoAnalyze.__version__"}
