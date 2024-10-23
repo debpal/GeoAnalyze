@@ -2,6 +2,14 @@
 Release Notes
 ===============
 
+Version 0.0.3
+---------------
+
+* **Release date:** 23-Oct-2024.
+
+* **Features:** Introduced enhanced functionality for GIS file operations. The :class:`GeoAnalyze.File` class has now reached a stable and mature stage.
+
+
 Version 0.0.2
 ---------------
 
