@@ -9,7 +9,9 @@ description = "A Python package designed to provide toolkits for geospatial anal
 authors = [
   { name="Debasish Pal", email="bestdebasish@gmail.com" },
 ]
-dependencies = []
+dependencies = [
+    "geopandas"
+]
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -28,9 +30,7 @@ dynamic = ["version"]
 keywords = [
 	"Raster",
     "Shapefile",
-	"Geoprocessing",
-    "Watershed",
-    "Delineation"
+	"Geoprocessing"
 ]
 
 
