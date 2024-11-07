@@ -115,3 +115,12 @@ def test_extract_specific_extension(
             folder_path=tmp_dir,
             extension='.txt'
         ) == ['teomporary.txt']
+
+
+def test_github_action(
+    core
+):
+
+    assert core._github_action(
+        integer=1
+    ) == '1'
