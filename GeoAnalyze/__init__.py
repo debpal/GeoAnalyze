@@ -1,16 +1,16 @@
 from .file import File
 from .shape import Shape
-# from .raster import Raster
-# from .flowpath import Flowpath
-# from .watershed import Watershed
+from .raster import Raster
+from .stream import Stream
+from .watershed import Watershed
 
 
 __all__ = [
     'File',
-    'Shape'
-    # 'Raster',
-    # 'Flowpath',
-    # 'Watershed'
+    'Shape',
+    'Raster',
+    'Stream',
+    'Watershed'
 ]
 
 
