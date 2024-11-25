@@ -532,7 +532,7 @@ class Shape:
 
     def nondecimal_float_column_to_int(
         self,
-        shape_file: str,
+        shape_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -557,7 +557,7 @@ class Shape:
         for column in gdf.columns:
             if 'float' in str(gdf[column].dtype):
                 no_decimal = (gdf[column] % 1 == 0).all()
-                gdf[column] = gdf[column].astype(int) if no_decimal is True else gdf[column]
+                gdf[column] = gdf[column].apply(lambda x: round(x)) if no_decimal else gdf[column]
             else:
                 pass
 

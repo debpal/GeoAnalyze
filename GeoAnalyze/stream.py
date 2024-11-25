@@ -83,18 +83,80 @@ class Stream:
         gdf.geometry = gdf.geometry.apply(
             lambda x: shapely.LineString(x.coords[::-1])
         )
-        gdf = gdf.dissolve(by=[tmp_col]).reset_index(drop=True)
-        reverse_points = len(
+        upstream_points = len(
             set(
                 gdf.geometry.apply(lambda x: x.coords[0])
             )
         )
-        output = f'Number of stream segments and upstream poitns are {len(gdf)} and {reverse_points}, respectively.'
+        output = f'Flow segments: {len(gdf)}, upstream points: {upstream_points} after splitting MultiLineString(s), if present.'
+        gdf = gdf.dissolve(by=[tmp_col]).reset_index(drop=True)
 
         # saving GeoDataFrame
         gdf.to_file(output_stream)
 
         return output
+
+    def downstream_link(
+        self,
+        input_stream: str,
+        stream_col: str,
+        link_col: str,
+        output_stream: str
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Identifies downstream link identifiers for all flow segments
+        and saves the updated GeoDataFrame to the specified shapefile path.
+
+        Parameters
+        ----------
+        input_stream : str
+            Shapefile path containing line segments representing the stream path.
+
+        stream_col : str
+            Column name in the stream shapefile containing a unique identifier for each stream segment.
+
+        link_col : str
+            Column name where the downstream link identifiers of flow segments will be stored.
+
+        output_stream : str
+            Shapefile path to save the output GeoDataFrame of stream path.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame with an additional column for downstream link identifiers of flow segments.
+        '''
+
+        # stream geodataframe
+        stream_gdf = geopandas.read_file(input_stream)
+
+        # endpoints of flow segments
+        upstream_points = {
+            idx: line.coords[0] for idx, line in zip(stream_gdf['LINKNO'], stream_gdf.geometry)
+        }
+        downstream_points = {
+            idx: line.coords[-1] for idx, line in zip(stream_gdf['LINKNO'], stream_gdf.geometry)
+        }
+
+        # link between flow segments
+        downstream_link = {}
+        for dp_id in downstream_points.keys():
+            up_link = list(
+                filter(
+                    lambda up_id: upstream_points[up_id] == downstream_points[dp_id], upstream_points
+                )
+            )
+            if len(up_link) == 1:
+                downstream_link[dp_id] = up_link[0]
+            else:
+                downstream_link[dp_id] = -1
+
+        # update stream GeoDataFrame with downstream link and save
+        stream_gdf[link_col] = downstream_link.values()
+        stream_gdf.to_file(output_stream)
+
+        return stream_gdf
 
     def junction_points(
         self,
@@ -158,6 +220,64 @@ class Stream:
         output_gdf.to_file(junction_file)
 
         return output_gdf
+
+    def main_outlets(
+        self,
+        stream_file: str,
+        stream_col: str,
+        outlet_file: str
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Identifies the main outlet points of a stream path and
+        saves the resulting GeoDataFrame to the specified shapefile path.
+
+        Parameters
+        ----------
+        stream_file : str
+            Shapefile path containing line segments representing the stream path.
+
+        stream_col : str
+            Column name in the stream shapefile containing a unique identifier for each stream segment.
+
+        outlet_file : str
+            Shapefile path to save the output GeoDataFrame of main outlet points.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing the main outlet points along
+            with their associated flow segment identifiers.
+        '''
+
+        # stream geodataframe
+        stream_gdf = geopandas.read_file(stream_file)
+
+        # downstream endpoint GeoDataFrame
+        downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
+        downstream_gdf = geopandas.GeoDataFrame(
+            {
+                stream_col: stream_gdf[stream_col],
+                'geometry': downstream_points
+            },
+            crs=stream_gdf.crs
+        )
+
+        # outlet point GeoDataFrame
+        downstream_counts = downstream_gdf['geometry'].value_counts()
+        outlet_points = downstream_counts[downstream_counts == 1].index
+        outlet_gdf = downstream_gdf[downstream_gdf['geometry'].isin(outlet_points.tolist())]
+        outlet_gdf = outlet_gdf.reset_index(drop=True)
+        outlet_gdf.insert(
+            loc=0,
+            column='moid',
+            value=range(1, len(outlet_gdf) + 1)
+        )
+
+        # save the outlet point GeoDataFrame
+        outlet_gdf.to_file(outlet_file)
+
+        return outlet_gdf
 
     def create_box_touching_selected_segment(
         self,
