@@ -133,10 +133,10 @@ class Stream:
 
         # endpoints of flow segments
         upstream_points = {
-            idx: line.coords[0] for idx, line in zip(stream_gdf['LINKNO'], stream_gdf.geometry)
+            idx: line.coords[0] for idx, line in zip(stream_gdf[stream_col], stream_gdf.geometry)
         }
         downstream_points = {
-            idx: line.coords[-1] for idx, line in zip(stream_gdf['LINKNO'], stream_gdf.geometry)
+            idx: line.coords[-1] for idx, line in zip(stream_gdf[stream_col], stream_gdf.geometry)
         }
 
         # link between flow segments
@@ -221,6 +221,60 @@ class Stream:
 
         return output_gdf
 
+    def pour_points(
+        self,
+        stream_file: str,
+        pour_file: str
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Generates a GeoDataFrame of pour points for flow segments in the stream path.
+        For each flow segment, the most downstream point is selected unless it is a junction point,
+        in which case the second most downstream point is used. A `junction` column is added to indicate
+        junction points. The resulting GeoDataFrame is saved to the specified shapefile path.
+
+        Parameters
+        ----------
+        stream_file : str
+            Shapefile path containing line segments representing the stream path.
+
+        pour_file : str
+            Shapefile path to save the output GeoDataFrame of pour points.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing the pour points.
+        '''
+
+        # stream GeoDataFrame
+        stream_gdf = geopandas.read_file(stream_file)
+
+        # junction points
+        downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
+        point_count = downstream_points.value_counts()
+        junction_points = point_count[point_count > 1].index.to_list()
+
+        # pour points
+        pour_gdf = stream_gdf.copy()
+        pour_gdf['junction'] = pour_gdf['geometry'].apply(
+            lambda x: 'YES' if shapely.Point(*x.coords[-1]) in junction_points else 'NO'
+        )
+        pour_gdf['pour_coords'] = pour_gdf.apply(
+            lambda row: row.geometry.coords[-2] if row['junction'] == 'YES' else row.geometry.coords[-1],
+            axis=1
+        )
+        pour_gdf['geometry'] = pour_gdf.apply(
+            lambda row: shapely.Point(*row['pour_coords']),
+            axis=1
+        )
+        pour_gdf = pour_gdf.drop(columns=['pour_coords'])
+
+        # save the outlet point GeoDataFrame
+        pour_gdf.to_file(pour_file)
+
+        return pour_gdf
+
     def main_outlets(
         self,
         stream_file: str,
@@ -268,11 +322,6 @@ class Stream:
         outlet_points = downstream_counts[downstream_counts == 1].index
         outlet_gdf = downstream_gdf[downstream_gdf['geometry'].isin(outlet_points.tolist())]
         outlet_gdf = outlet_gdf.reset_index(drop=True)
-        outlet_gdf.insert(
-            loc=0,
-            column='moid',
-            value=range(1, len(outlet_gdf) + 1)
-        )
 
         # save the outlet point GeoDataFrame
         outlet_gdf.to_file(outlet_file)
