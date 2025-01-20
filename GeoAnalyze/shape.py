@@ -32,7 +32,7 @@ class Shape:
             List of columns, apart from 'geometry', to include in the output shapefile.
 
         output_file : str
-            Shapefile path to save the output GeoDataFrame.
+            Path to save the output shapefile.
 
         Returns
         -------
@@ -80,12 +80,12 @@ class Shape:
             List of columns, apart from 'geometry', to delete in the output shapefile.
 
         output_file : str
-            Shapefile path to save the output GeoDataFrame.
+            Path to save the output shapefile.
 
         Returns
         -------
         GeoDataFrame
-            A GeoDataFrame with trhe deletion of speificed columns.
+            A GeoDataFrame with the deletion of speificed columns.
         '''
 
         # check output file
@@ -121,13 +121,13 @@ class Shape:
         Parameters
         ----------
         input_file : str
-            Path to the input shapefile
+            Path to the input shapefile.
 
         colums_name : str
             Name of the ID column to be added.
 
         output_file : str
-            Shapefile path to save the output GeoDataFrame.
+            Path to save the output shapefile.
 
         Returns
         -------
@@ -154,6 +154,41 @@ class Shape:
 
         return gdf
 
+    def change_crs(
+        self,
+        input_file: str,
+        target_crs: str,
+        output_file: str
+    ) -> str:
+
+        '''
+        Reprojects a GeoDataFrame to a new Coordinate Reference System.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input shapefile.
+
+        target_crs : str
+            Target Coordinate Reference System for the output GeoDataFrame (e.g., 'EPSG:4326').
+
+        output_file : str
+            Path to save the output shapefile.
+
+        Returns
+        -------
+        str
+            The string representation of the Coordinate Reference System for the output GeoDataFrame.
+        '''
+
+        gdf = geopandas.read_file(input_file)
+
+        gdf = gdf.to_crs(target_crs)
+
+        gdf.to_file(output_file)
+
+        return str(gdf.crs)
+
     def fill_polygons_after_explode(
         self,
         input_file: str,
@@ -170,7 +205,7 @@ class Shape:
             Path to the input shapefile.
 
         output_file : str
-            Shapefile path to save the output GeoDataFrame.
+            Path to save the output shapefile.
 
         Returns
         -------
@@ -228,7 +263,7 @@ class Shape:
             Path to the input shapefile.
 
         output_file : str
-            Shapefile path to save the output GeoDataFrame.
+            Path to save the output shapefile.
 
         Returns
         -------
@@ -287,13 +322,13 @@ class Shape:
         Parameters
         ----------
         input_file : str
-            Shapefile path containing the polygons
+            Path to the input shapefile.
 
         id_column : str
-            Name of the ID column to assign unique identifiers to each polygon
+            Name of the ID column to assign unique identifiers to each polygon.
 
         output_file : str
-            Shapefile path to save the output GeoDataFrame.
+            Path to save the output shapefile.
 
         Returns
         -------
@@ -356,14 +391,13 @@ class Shape:
         Parameters
         ----------
         input_file : str
-            Path to the input shapefile containing the main geometries
-            from which extraction will be done.
+            Path to the input shapefile.
 
         overlay_file : str
-            Path to the input shapefile containing intersecting geometries.
+            Path to the input overlay shapefile.
 
         output_file : str
-            Shapefile path to save the output GeoDataFrame of extracted geometries.
+            Path to save the output shapefile.
 
         Returns
         -------
@@ -404,7 +438,7 @@ class Shape:
 
     def polygons_area_cumsum_count(
         self,
-        shape_file: str
+        input_file: str
     ) -> dict[float, int]:
 
         '''
@@ -414,8 +448,8 @@ class Shape:
 
         Parameters
         ----------
-        shape_file : str
-            Shapefile path containing the polygons.
+        input_file : str
+            Path to the input shapefile.
 
         Returns
         -------
@@ -426,7 +460,7 @@ class Shape:
 
         # confirming input geometry type is Polygon
         geometry_type = Core().shapefile_geometry_type(
-            file_path=shape_file
+            file_path=input_file
         )
         if 'Polygon' in geometry_type:
             pass
@@ -434,7 +468,7 @@ class Shape:
             raise Exception('Input geometry must be Polygon type.')
 
         # input GeoDataFrame
-        gdf = geopandas.read_file(shape_file)
+        gdf = geopandas.read_file(input_file)
 
         # cumulative area percentage of polygons
         tmp_col = Core()._tmp_df_column_name(list(gdf.columns))
@@ -481,7 +515,7 @@ class Shape:
             to the specified cutoff (between 0 and 100) are retained.
 
         output_file : str
-            Shapefile path to save the output GeoDataFrame.
+            Path to save the output shapefile.
 
         index_sort : bool, False
             If True, polygons are sorted by their index before sorting cumulative area percentages.
@@ -532,7 +566,7 @@ class Shape:
 
     def nondecimal_float_column_to_int(
         self,
-        shape_file: str
+        input_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -541,7 +575,7 @@ class Shape:
 
         Parameters
         ----------
-        shape_file : str
+        input_file : str
             Path to the input shapefile.
 
         Returns
@@ -551,7 +585,7 @@ class Shape:
         '''
 
         # input GeoDataFrame
-        gdf = geopandas.read_file(shape_file)
+        gdf = geopandas.read_file(input_file)
 
         # convert data type from float to integer
         for column in gdf.columns:
@@ -562,7 +596,7 @@ class Shape:
                 pass
 
         # saving GeoDataFrame
-        gdf.to_file(shape_file)
+        gdf.to_file(input_file)
 
         return gdf
 
@@ -571,7 +605,7 @@ class Shape:
         folder_path: str,
         geometry_type: str,
         id_column: str,
-        shape_file: str
+        output_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -589,8 +623,8 @@ class Shape:
         id_column : str
             Name of the ID column in the output GeoDataFrame.
 
-        shape_file : str
-            Shapefile path to save the output GeoDataFrame.
+        output_file : str
+            Path to save the output shapefile.
 
         Returns
         -------
@@ -600,7 +634,7 @@ class Shape:
         '''
 
         # check output file
-        check_file = Core().is_valid_ogr_driver(shape_file)
+        check_file = Core().is_valid_ogr_driver(output_file)
         if check_file is True:
             pass
         else:
@@ -651,6 +685,6 @@ class Shape:
         aggr_gdf[id_column] = range(1, len(aggr_gdf) + 1)
 
         # saving GeoDataFrame
-        aggr_gdf.to_file(shape_file)
+        aggr_gdf.to_file(output_file)
 
         return aggr_gdf

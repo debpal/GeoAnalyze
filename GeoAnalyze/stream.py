@@ -13,7 +13,7 @@ class Stream:
 
     def check_flow_direction(
         self,
-        stream_file: str
+        input_file: str
     ) -> bool:
 
         '''
@@ -23,8 +23,8 @@ class Stream:
 
         Parameters
         ----------
-        stream_file : str
-            Shapefile path containing the stream data.
+        input_file : str
+            Path to the input stream shapefile.
 
         Returns
         -------
@@ -35,7 +35,7 @@ class Stream:
         '''
 
         # input stream GeoDataFrame
-        gdf = geopandas.read_file(stream_file)
+        gdf = geopandas.read_file(input_file)
         gdf = gdf.explode(
             index_parts=False,
             ignore_index=True
@@ -51,7 +51,7 @@ class Stream:
 
     def reverse_flow_direction(
         self,
-        input_stream: str,
+        input_file: str,
         output_stream: str
     ) -> geopandas.GeoDataFrame:
 
@@ -61,11 +61,11 @@ class Stream:
 
         Parameters
         ----------
-        input_stream : str
-            Shapefile path containing the stream data.
+        input_file : str
+            Path to the input stream shapefile.
 
-        output_stream : str or GeoDataFrame
-            File path to save the output GeoDataFrame.
+        output_stream : str
+            Path to save the output stream shapefile.
 
         Returns
         -------
@@ -74,7 +74,7 @@ class Stream:
         '''
 
         # input stream GeoDataFrame
-        gdf = geopandas.read_file(input_stream)
+        gdf = geopandas.read_file(input_file)
         tmp_col = Core()._tmp_df_column_name(list(gdf.columns))
         gdf = gdf.reset_index(names=[tmp_col])
         gdf = gdf.explode(index_parts=False, ignore_index=True)
@@ -98,20 +98,19 @@ class Stream:
 
     def downstream_link(
         self,
-        input_stream: str,
+        input_file: str,
         stream_col: str,
         link_col: str,
         output_stream: str
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Identifies downstream link identifiers for all flow segments
-        and saves the updated GeoDataFrame to the specified shapefile path.
+        Identifies downstream link identifiers for all flow segments.
 
         Parameters
         ----------
-        input_stream : str
-            Shapefile path containing line segments representing the stream path.
+        input_file : str
+            Path to the input stream shapefile.
 
         stream_col : str
             Column name in the stream shapefile containing a unique identifier for each stream segment.
@@ -120,7 +119,7 @@ class Stream:
             Column name where the downstream link identifiers of flow segments will be stored.
 
         output_stream : str
-            Shapefile path to save the output GeoDataFrame of stream path.
+            Path to save the output stream shapefile.
 
         Returns
         -------
@@ -129,7 +128,7 @@ class Stream:
         '''
 
         # stream geodataframe
-        stream_gdf = geopandas.read_file(input_stream)
+        stream_gdf = geopandas.read_file(input_file)
 
         # endpoints of flow segments
         upstream_points = {
@@ -160,9 +159,9 @@ class Stream:
 
     def junction_points(
         self,
-        stream_file: str,
+        input_file: str,
         stream_col: str,
-        junction_file: str
+        output_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -172,14 +171,14 @@ class Stream:
 
         Parameters
         ----------
-        stream_file : str
-            Shapefile path containing line segments representing the stream path.
+        input_file : str
+            Path to the input stream shapefile.
 
         stream_col : str
             Column name in the stream shapefile containing a unique identifier for each stream segment.
 
-        junction_file : str
-            Shapefile path to save the output GeoDataFrame of junction points.
+        output_file : str
+            Path to save the output junction point shapefile.
 
         Returns
         -------
@@ -188,7 +187,7 @@ class Stream:
         '''
 
         # stream geodataframe
-        stream_gdf = geopandas.read_file(stream_file)
+        stream_gdf = geopandas.read_file(input_file)
 
         # downstream endpoint GeoDataFrame
         downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
@@ -217,29 +216,28 @@ class Stream:
             geometry=list(junction_groups.index),
             crs=stream_gdf.crs
         )
-        output_gdf.to_file(junction_file)
+        output_gdf.to_file(output_file)
 
         return output_gdf
 
     def pour_points(
         self,
-        stream_file: str,
-        pour_file: str
+        input_file: str,
+        output_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
         Generates a GeoDataFrame of pour points for flow segments in the stream path.
         For each flow segment, the most downstream point is selected unless it is a junction point,
-        in which case the second most downstream point is used. A `junction` column is added to indicate
-        junction points. The resulting GeoDataFrame is saved to the specified shapefile path.
+        in which case the second most downstream point is used.
 
         Parameters
         ----------
-        stream_file : str
-            Shapefile path containing line segments representing the stream path.
+        input_file : str
+            Path to the input stream shapefile.
 
-        pour_file : str
-            Shapefile path to save the output GeoDataFrame of pour points.
+        output_file : str
+            Path to save the output pour point shapefile.
 
         Returns
         -------
@@ -248,7 +246,7 @@ class Stream:
         '''
 
         # stream GeoDataFrame
-        stream_gdf = geopandas.read_file(stream_file)
+        stream_gdf = geopandas.read_file(input_file)
 
         # junction points
         downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
@@ -268,18 +266,18 @@ class Stream:
             lambda row: shapely.Point(*row['pour_coords']),
             axis=1
         )
-        pour_gdf = pour_gdf.drop(columns=['pour_coords'])
+        pour_gdf = pour_gdf.drop(columns=['pour_coords', 'junction'])
 
         # save the outlet point GeoDataFrame
-        pour_gdf.to_file(pour_file)
+        pour_gdf.to_file(output_file)
 
         return pour_gdf
 
     def main_outlets(
         self,
-        stream_file: str,
+        input_file: str,
         stream_col: str,
-        outlet_file: str
+        output_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -288,14 +286,14 @@ class Stream:
 
         Parameters
         ----------
-        stream_file : str
-            Shapefile path containing line segments representing the stream path.
+        input_file : str
+            Path to the input stream shapefile.
 
         stream_col : str
             Column name in the stream shapefile containing a unique identifier for each stream segment.
 
-        outlet_file : str
-            Shapefile path to save the output GeoDataFrame of main outlet points.
+        output_file : str
+            Path to save the output outlet point shapefile.
 
         Returns
         -------
@@ -305,7 +303,7 @@ class Stream:
         '''
 
         # stream geodataframe
-        stream_gdf = geopandas.read_file(stream_file)
+        stream_gdf = geopandas.read_file(input_file)
 
         # downstream endpoint GeoDataFrame
         downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
@@ -324,17 +322,17 @@ class Stream:
         outlet_gdf = outlet_gdf.reset_index(drop=True)
 
         # save the outlet point GeoDataFrame
-        outlet_gdf.to_file(outlet_file)
+        outlet_gdf.to_file(output_file)
 
         return outlet_gdf
 
     def create_box_touching_selected_segment(
         self,
-        input_stream: str,
+        input_file: str,
         column_name: str,
         column_value: typing.Any,
         box_length: float,
-        output_box: str
+        output_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -343,8 +341,8 @@ class Stream:
 
         Parameters
         ----------
-        input_stream : str
-            Shapefile path containing the stream data.
+        input_file : str
+            Path to the input stream shapefile.
 
         column_name : str
             Name of the column used for selecting the target stream segment.
@@ -355,8 +353,8 @@ class Stream:
         box_length : float
             Length of each side of the square box polygon.
 
-        output_box : str
-            Shapefile path to save the output GeoDataFrame containing the box polygon.
+        output_file : str
+            Path to save the output box polygon shapefile.
 
         Returns
         -------
@@ -366,7 +364,7 @@ class Stream:
         '''
 
         # input line segment
-        gdf = geopandas.read_file(input_stream)
+        gdf = geopandas.read_file(input_file)
         line = gdf[gdf[column_name].isin([column_value])].geometry.iloc[0]
 
         # line coords
@@ -408,17 +406,17 @@ class Stream:
             geometry=[rotate_box],
             crs=gdf.crs
         )
-        box_gdf.to_file(output_box)
+        box_gdf.to_file(output_file)
 
         return box_gdf
 
     def create_box_crosses_segment_at_endpoint(
         self,
-        input_stream: str,
+        input_file: str,
         column_name: str,
         column_value: typing.Any,
         box_length: float,
-        output_box: str,
+        output_file: str,
         downstream_point: bool = True
     ) -> geopandas.GeoDataFrame:
 
@@ -428,8 +426,8 @@ class Stream:
 
         Parameters
         ----------
-        input_stream : str
-            Shapefile path containing the stream data.
+        input_file : str
+            Path to the input stream shapefile.
 
         column_name : str
             Name of the column used for selecting the target stream segment.
@@ -440,8 +438,8 @@ class Stream:
         box_length : float
             Length of each side of the square box polygon.
 
-        output_box : str
-            Shapefile path to save the output GeoDataFrame containing box polygon.
+        output_file : str
+            Path to save the output box polygon shapefile.
 
         downstream_point : bool, optional
             If True, the box is positioned to pass through the downstream endpoint
@@ -455,7 +453,7 @@ class Stream:
         '''
 
         # input line segement
-        gdf = geopandas.read_file(input_stream)
+        gdf = geopandas.read_file(input_file)
         line = gdf[gdf[column_name].isin([column_value])].geometry.iloc[0]
 
         # get point
@@ -486,17 +484,17 @@ class Stream:
             geometry=[box],
             crs=gdf.crs
         )
-        box_gdf.to_file(output_box)
+        box_gdf.to_file(output_file)
 
         return box_gdf
 
     def create_box_touch_segment_at_endpoint(
         self,
-        input_stream: str,
+        input_file: str,
         column_name: str,
         column_value: typing.Any,
         box_length: float,
-        output_box: str,
+        output_file: str,
         upstream_point: bool = True
     ) -> geopandas.GeoDataFrame:
 
@@ -506,8 +504,8 @@ class Stream:
 
         Parameters
         ----------
-        input_stream : str
-            Shapefile path containing the stream data.
+        input_file : str
+            Path to the input stream shapefile.
 
         column_name : str
             Name of the column used for selecting the target stream segment.
@@ -518,8 +516,8 @@ class Stream:
         box_length : float
             Length of each side of the square box polygon.
 
-        output_box : str
-            Shapefile path to save the output GeoDataFrame containing the box polygon.
+        output_file : str
+            Path to save the output box polygon shapefile.
 
         upstream_point : bool, optional
             If True, the box is positioned to pass through the upstream endpoint
@@ -533,7 +531,7 @@ class Stream:
         '''
 
         # input line segement
-        gdf = geopandas.read_file(input_stream)
+        gdf = geopandas.read_file(input_file)
         line = gdf[gdf[column_name].isin([column_value])].geometry.iloc[0]
 
         # get point
@@ -565,6 +563,6 @@ class Stream:
             geometry=[box],
             crs=gdf.crs
         )
-        box_gdf.to_file(output_box)
+        box_gdf.to_file(output_file)
 
         return box_gdf
