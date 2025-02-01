@@ -1,7 +1,7 @@
-import pytest
 import os
 import tempfile
 import GeoAnalyze
+import pytest
 
 
 @pytest.fixture(scope='class')
