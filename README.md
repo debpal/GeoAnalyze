@@ -24,11 +24,33 @@ When managing GIS files, each main file is often associated with several auxilia
 * Extracting files with the same extension from a folder.
 
  
-## Roadmap
+## Raster processing
 
-* Raster processing.
-* Shapefile analysis.
-* Watershed delineation.
+* Counting of raster cells.
+* Changing raster solutions.
+* Reprojecting Coordinate Reference System of raster.
+* Clipping raster by shapes.
+* Raster from input geometries.
+* Raster NoData processing
+
+## Shapefile analysis
+
+* Column analysis.
+* Adding shape ID.
+* Reprojecting Coordinate Reference System of shapefile.
+* Polygon filling.
+* Spatial join of geometries.
+* Merging shapefiles.
+
+## Watershed delineation
+
+* Pit filling of Digital Elevation Model (DEM).
+* DEM slope prediction.
+* Flow direction.
+* Flow accumulation.
+* Stream extraction.
+* Subbaisn creation.
+
 
 
 ## Easy Installation

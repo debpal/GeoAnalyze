@@ -1,15 +1,15 @@
-import pyflwdir
-import rasterio
-import rasterio.features
-import shapely
-import geopandas
-import numpy
 import os
 import sys
 import tempfile
 import io
 import time
 import json
+import pyflwdir
+import rasterio
+import rasterio.features
+import shapely
+import geopandas
+import numpy
 from .core import Core
 
 
@@ -576,6 +576,7 @@ class Watershed:
 
         return 'All geoprocessing has been completed.'
 
+    # pytest complete
     def delineation_files_by_single_function(
         self,
         dem_file: str,
@@ -626,13 +627,19 @@ class Watershed:
         # summary dictionary
         summary = {}
 
-        # check outlet type
+        # check validity of output folder path
+        if os.path.isdir(folder_path):
+            pass
+        else:
+            raise Exception('Input folder path does not exsit.')
+
+        # check validty of outlet type
         if outlet_type in ['single', 'multiple']:
             pass
         else:
             raise Exception('Outlet type must be one of [single, multiple].')
 
-        # check threshold flow accumalation type
+        # check validity of threshold flow accumalation type
         if tacc_type in ['percentage', 'absolute']:
             pass
         else:
@@ -664,18 +671,12 @@ class Watershed:
 
         # flow direction array and saving raster
         start_time = time.time()
-        if outlet_type == 'multiple':
-            pitfill_array, flwdir_array = pyflwdir.dem.fill_depressions(
-                elevtn=dem_array,
-                outlets='edge',
-                nodata=dem_profile['nodata']
-            )
-        else:
-            pitfill_array, flwdir_array = pyflwdir.dem.fill_depressions(
-                elevtn=dem_array,
-                outlets='min',
-                nodata=dem_profile['nodata']
-            )
+        outlets = 'edge' if outlet_type == 'multiple' else 'min'
+        pitfill_array, flwdir_array = pyflwdir.dem.fill_depressions(
+            elevtn=dem_array,
+            outlets=outlets,
+            nodata=dem_profile['nodata']
+        )
         flwdir_profile = dem_profile.copy()
         flwdir_profile.update(
             dtype=flwdir_array.dtype,

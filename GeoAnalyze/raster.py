@@ -1,10 +1,10 @@
+import typing
 import rasterio
 import rasterio.features
 import rasterio.mask
 import geopandas
 import pandas
 import numpy
-import typing
 
 
 class Raster:
@@ -13,9 +13,10 @@ class Raster:
     Provides functionality for raster file operations.
     '''
 
+    # pytest complete
     def count_data_cells(
         self,
-        input_file: str
+        raster_file: str
     ) -> int:
 
         '''
@@ -23,8 +24,8 @@ class Raster:
 
         Parameters
         ----------
-        input_file : str
-            Path of the input raster file.
+        raster_file : str
+            Path to the input raster file.
 
         Returns
         -------
@@ -32,16 +33,16 @@ class Raster:
             The numer of cells with valid data in the raster file.
         '''
 
-        with rasterio.open(input_file) as input_raster:
-            raster_nodata = input_raster.nodata
+        with rasterio.open(raster_file) as input_raster:
             raster_array = input_raster.read(1)
-            output = int((raster_array != raster_nodata).sum())
+            output = int((raster_array != input_raster.nodata).sum())
 
         return output
 
+    # pytest complete
     def count_nodata_cells(
         self,
-        input_file: str
+        raster_file: str
     ) -> int:
 
         '''
@@ -49,8 +50,8 @@ class Raster:
 
         Parameters
         ----------
-        input_file : str
-            Path of the input raster file.
+        raster_file : str
+            Path to the input raster file.
 
         Returns
         -------
@@ -58,10 +59,9 @@ class Raster:
             The numer of NoData cells in the raster file.
         '''
 
-        with rasterio.open(input_file) as input_raster:
-            raster_nodata = input_raster.nodata
+        with rasterio.open(raster_file) as input_raster:
             raster_array = input_raster.read(1)
-            output = int((raster_array == raster_nodata).sum())
+            output = int((raster_array == input_raster.nodata).sum())
 
         return output
 
@@ -162,7 +162,7 @@ class Raster:
 
         return gdf
 
-    def rescaling_resolution(
+    def resolution_rescaling(
         self,
         input_file: str,
         target_resolution: int,
@@ -250,7 +250,7 @@ class Raster:
 
         return affine_matrix
 
-    def rescaling_resolution_with_mask(
+    def resolution_rescaling_with_mask(
         self,
         input_file: str,
         mask_file: str,
@@ -268,7 +268,7 @@ class Raster:
             Path to the input raster file.
 
         mask_file : str
-            Path to the mask raster file.
+            Path to the mask raster file, defining the spatial extent and resolution.
 
         resampling_method : str
             Method used for raster resampling. Supported options are:
@@ -344,7 +344,7 @@ class Raster:
 
         return affine_matrix
 
-    def reproject_crs(
+    def crs_reprojection(
         self,
         input_file: str,
         resampling_method: str,
@@ -432,16 +432,16 @@ class Raster:
 
         return affine_matrix
 
-    def set_value_to_nodata(
+    def nodata_conversion_from_value(
         self,
         input_file: str,
         target_value: list[float],
         nodata: float,
         output_file: str
-    ) -> dict[str, typing.Any]:
+    ) -> rasterio.profiles.Profile:
 
         '''
-        Converts specified values in a raster array to nodata.
+        Converts specified values in a raster array to NoData.
 
         Parameters
         ----------
@@ -452,15 +452,15 @@ class Raster:
             List of values in the input raster array to convert to nodata.
 
         nodata : float
-            The nodata value to assign in the output raster.
+            The NoData value to assign in the output raster.
 
         output_file : str
             Path to save the output raster file.
 
         Returns
         -------
-        dict
-            A profile dictionary containing metadata about the output raster.
+        profile
+            A profile containing metadata about the output raster.
         '''
 
         with rasterio.open(input_file) as input_raster:
@@ -482,12 +482,68 @@ class Raster:
 
         return output_profile
 
+    def nodata_value_change(
+        self,
+        input_file: str,
+        nodata: int,
+        output_file: str,
+        dtype: typing.Optional[str] = None
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Modify the NoData value of a raster array.
+
+        Parameters
+        ----------
+        input_file : str
+            Path of the input raster file.
+
+        nodata : int
+            New NoData value to be assigned to the output raster.
+
+        output_file : str
+            Path to save the output raster file.
+
+        dtype : str, optional
+            Data type of the output raster. If None, the data type of the input raster is retained.
+
+        Returns
+        -------
+        profile
+            A profile containing metadata about the output raster.
+        '''
+
+        with rasterio.open(input_file) as input_raster:
+            raster_profile = input_raster.profile
+            output_array = numpy.where(
+                input_raster.read(1) == raster_profile['nodata'],
+                nodata,
+                input_raster.read(1)
+            )
+            if dtype is None:
+                raster_profile.update(
+                    {
+                        'nodata': nodata
+                    }
+                )
+            else:
+                raster_profile.update(
+                    {
+                        'nodata': nodata,
+                        'dtype': dtype
+                    }
+                )
+            with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
+                output_raster.write(output_array, 1)
+
+        return raster_profile
+
     def clipping_by_shapes(
         self,
         input_file: str,
         shape_file: str,
         output_file: str
-    ) -> dict[str, typing.Any]:
+    ) -> rasterio.profiles.Profile:
 
         '''
         Clips a raster file using a given shape file.
@@ -505,8 +561,8 @@ class Raster:
 
         Returns
         -------
-        dict
-            A profile dictionary containing metadata about the output raster.
+        profile
+            A profile containing metadata about the output raster.
         '''
 
         with rasterio.open(input_file) as input_raster:
@@ -528,6 +584,71 @@ class Raster:
             )
             with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
                 output_raster.write(output_array)
-                output_profile = dict(output_raster.profile)
+                output_profile = output_raster.profile
 
         return output_profile
+
+    def array_from_geometries(
+        self,
+        shape_file: str,
+        value_column: str,
+        mask_file: str,
+        nodata: int,
+        dtype: str,
+        output_file: str
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Converts geometries from a shapefile to a raster array.
+
+        Parameters
+        ----------
+        shape_file : str
+            Path to the input shapefile containing the geometries.
+
+        value_column : str
+            Column name that contains integer or float values
+            to be inserted into the raster array.
+
+        mask_file : str
+            Path to the mask raster file, defining the spatial extent and resolution.
+
+        nodata : int
+            NoData value for the output raster.
+
+        dtype : str
+            Data type of the output raster.
+
+        output_file : str
+            Path to save the output raster file.
+
+        Returns
+        -------
+        profile
+            A profile containing metadata about the output raster.
+        '''
+
+        # input shapes
+        gdf = geopandas.read_file(shape_file)
+
+        # saving output raster
+        with rasterio.open(mask_file) as mask_raster:
+            mask_profile = mask_raster.profile
+            output_array = rasterio.features.rasterize(
+                shapes=zip(gdf.geometry, gdf[value_column]),
+                out_shape=mask_raster.shape,
+                transform=mask_raster.transform,
+                all_touched=True,
+                fill=nodata,
+                dtype=dtype
+            )
+            mask_profile.update(
+                {
+                    'nodata': nodata,
+                    'dtype': dtype
+                }
+            )
+            with rasterio.open(output_file, mode='w', **mask_profile) as output_raster:
+                output_raster.write(output_array, 1)
+
+        return mask_profile

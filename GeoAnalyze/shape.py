@@ -11,7 +11,8 @@ class Shape:
     Provides functionality for shapefile operations.
     '''
 
-    def columns_retain(
+    # pytest complete
+    def column_retain(
         self,
         input_file: str,
         retain_cols: list[str],
@@ -40,7 +41,7 @@ class Shape:
             A GeoDataFrame containing the speificed columns.
         '''
 
-        # check output file
+        # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
         if check_file is True:
             pass
@@ -60,7 +61,8 @@ class Shape:
 
         return gdf
 
-    def columns_delete(
+    # pytest complete
+    def column_delete(
         self,
         input_file: str,
         delete_cols: list[str],
@@ -88,7 +90,7 @@ class Shape:
             A GeoDataFrame with the deletion of speificed columns.
         '''
 
-        # check output file
+        # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
         if check_file is True:
             pass
@@ -107,7 +109,8 @@ class Shape:
 
         return gdf
 
-    def adding_id_column(
+    # pytest complete
+    def column_add_for_id(
         self,
         input_file: str,
         column_name: str,
@@ -136,7 +139,7 @@ class Shape:
             where values start from 1 and increase by 1.
         '''
 
-        # check output file
+        # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
         if check_file is True:
             pass
@@ -154,7 +157,8 @@ class Shape:
 
         return gdf
 
-    def change_crs(
+    # pytest complete
+    def crs_reprojection(
         self,
         input_file: str,
         target_crs: str,
@@ -181,13 +185,52 @@ class Shape:
             The string representation of the Coordinate Reference System for the output GeoDataFrame.
         '''
 
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # input GeoDataFrame
         gdf = geopandas.read_file(input_file)
 
+        # crs reprojection
         gdf = gdf.to_crs(target_crs)
 
+        # saving output GeoDataFrame
         gdf.to_file(output_file)
 
         return str(gdf.crs)
+
+    def polygons_to_boundary_lines(
+        self,
+        input_file: str,
+        output_file: str
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Extracts boundary lines from polygons.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input polygon shapefile.
+
+        output_file : str
+            Path to save the output line shapefile.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing the extracted boundary lines of the polygons.
+        '''
+
+        gdf = geopandas.read_file(input_file)
+        gdf.geometry = gdf.boundary
+        gdf.to_file(output_file)
+
+        return gdf
 
     def fill_polygons_after_explode(
         self,
@@ -223,7 +266,7 @@ class Shape:
 
         # confirming input geometry type is Polygon
         geometry_type = Core().shapefile_geometry_type(
-            file_path=input_file
+            shape_file=input_file
         )
         if 'Polygon' in geometry_type:
             pass
@@ -280,7 +323,7 @@ class Shape:
 
         # confirming input geometry type is Polygon
         geometry_type = Core().shapefile_geometry_type(
-            file_path=input_file
+            shape_file=input_file
         )
         if 'Polygon' in geometry_type:
             pass
@@ -346,7 +389,7 @@ class Shape:
 
         # confirming input geometry type is Polygon
         geometry_type = Core().shapefile_geometry_type(
-            file_path=input_file
+            shape_file=input_file
         )
         if 'Polygon' in geometry_type:
             pass
@@ -460,7 +503,7 @@ class Shape:
 
         # confirming input geometry type is Polygon
         geometry_type = Core().shapefile_geometry_type(
-            file_path=input_file
+            shape_file=input_file
         )
         if 'Polygon' in geometry_type:
             pass
@@ -536,7 +579,7 @@ class Shape:
 
         # confirming input geometry type is Polygon
         geometry_type = Core().shapefile_geometry_type(
-            file_path=input_file
+            shape_file=input_file
         )
         if 'Polygon' in geometry_type:
             pass

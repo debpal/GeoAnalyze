@@ -13,25 +13,25 @@ class Core:
 
     def is_valid_ogr_driver(
         self,
-        file_path: str
+        shape_file: str
     ) -> bool:
 
         '''
-        Returns whether the given file path is valid to write a GeoDataFrame.
+        Checks whether the given shapefile path is valid and supported.
 
         Parameters
         ----------
-        file_path : str
-            File path to save the GeoDataFrame.
+        shape_file : str
+            Path to the shapefile to be validated.
 
         Returns
         -------
         bool
-            True if the file path is valid, False otherwise.
+            True if the shapefile path is valid and supported, False otherwise.
         '''
 
         try:
-            pyogrio.detect_write_driver(file_path)
+            pyogrio.detect_write_driver(shape_file)
             output = True
         except Exception:
             output = False
@@ -40,25 +40,25 @@ class Core:
 
     def is_valid_raster_driver(
         self,
-        file_path: str
+        raster_file: str
     ) -> bool:
 
         '''
-        Returns whether the given file path is a valid raster file.
+        Checks whether the given raster file path is valid and supported.
 
         Parameters
         ----------
-        file_path : str
-            File path to save the raster.
+        raster_file : str
+            Path to the raster file to be validated.
 
         Returns
         -------
         bool
-            True if the file path is valid, False otherwise.
+            True if the raster file path is valid and supported, False otherwise.
         '''
 
         try:
-            rasterio.drivers.driver_from_extension(file_path)
+            rasterio.drivers.driver_from_extension(raster_file)
             output = True
         except Exception:
             output = False
@@ -67,7 +67,7 @@ class Core:
 
     def shapefile_geometry_type(
         self,
-        file_path: str
+        shape_file: str
     ) -> str:
 
         '''
@@ -75,7 +75,7 @@ class Core:
 
         Parameters
         ----------
-        file_path : str
+        shape_file : str
             Path of the shapefile.
 
         Returns
@@ -84,7 +84,7 @@ class Core:
             Geometry type of the shapefile.
         '''
 
-        with fiona.open(file_path) as input_shape:
+        with fiona.open(shape_file) as input_shape:
             output = str(input_shape.schema['geometry'])
 
         return output
