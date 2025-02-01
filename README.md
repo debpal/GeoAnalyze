@@ -44,6 +44,8 @@ When managing GIS files, each main file is often associated with several auxilia
 
 ## Watershed delineation
 
+The following watershed delineation functions have been implemented using the PyPI package [pyflwdir](https://pypi.org/project/pyflwdir/). Users can calculate these features with just a few lines of code, without requiring a detailed understanding of the `pyflwdir` package.
+
 * Pit filling of Digital Elevation Model (DEM).
 * DEM slope prediction.
 * Flow direction.
