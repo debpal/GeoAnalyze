@@ -1,7 +1,4 @@
 import os
-import sys
-import tempfile
-import io
 import time
 import json
 import pyflwdir
@@ -19,7 +16,8 @@ class Watershed:
     Provides functionality for watershed delineation from Digital Elevation Model (DEM).
     '''
 
-    def pit_fill_and_flow_direction(
+    # pytest complete
+    def flow_direction_after_filling_pits(
         self,
         dem_file: str,
         outlet_type: str,
@@ -28,7 +26,7 @@ class Watershed:
     ) -> str:
 
         '''
-        Fills pits of the DEM and use it to calculate the flow direction.
+        Compute flow direction after filling the pits of the DEM.
 
         Parameters
         ----------
@@ -48,7 +46,7 @@ class Watershed:
         Returns
         -------
         str
-            A confirmation message indicating that all geoprocessing is complete.
+            A message indicating the time required for all geoprocessing computations.
         '''
 
         # start time
@@ -58,9 +56,7 @@ class Watershed:
         for file in [pitfill_file, flwdir_file]:
             check_file = Core().is_valid_raster_driver(file)
             if check_file is False:
-                raise Exception(
-                    f'Could not retrieve driver from the file path: {file}.'
-                )
+                raise Exception('Could not retrieve driver from the file path.')
             else:
                 pass
 
@@ -69,17 +65,12 @@ class Watershed:
             raster_profile = input_dem.profile
             if outlet_type not in ['single', 'multiple']:
                 raise Exception('Outlet type must be one of [single, multiple].')
-            elif outlet_type == 'multiple':
-                pitfill_array, flwdir_array = pyflwdir.dem.fill_depressions(
-                    elevtn=input_dem.read(1).astype('float32'),
-                    outlets='edge',
-                    nodata=input_dem.nodata
-                )
             else:
+                outlets = 'edge' if outlet_type == 'multiple' else 'min'
                 pitfill_array, flwdir_array = pyflwdir.dem.fill_depressions(
                     elevtn=input_dem.read(1).astype('float32'),
-                    outlets='min',
-                    nodata=input_dem.nodata
+                    outlets=outlets,
+                    nodata=raster_profile['nodata']
                 )
             # saving pit filling raster
             raster_profile.update(
@@ -95,11 +86,13 @@ class Watershed:
             with rasterio.open(flwdir_file, 'w', **raster_profile) as output_flwdir:
                 output_flwdir.write(flwdir_array, 1)
 
+        # required time
         required_time = time.time() - start_time
-        print(f'Required time: {required_time:.2f} seconds.')
+        output = f'Time required for computing pit filling and flow direction: {required_time:.2f} seconds.'
 
-        return 'All geoprocessing has been completed.'
+        return output
 
+    # pytest complete
     def flow_accumulation(
         self,
         pitfill_file: str,
@@ -108,7 +101,7 @@ class Watershed:
     ) -> str:
 
         '''
-        Computes flow accumulation from the pit-filled DEM and flow direction.
+        Computes flow accumulation from the pit-filled DEM and flow direction rasters.
 
         Parameters
         ----------
@@ -124,7 +117,7 @@ class Watershed:
         Returns
         -------
         str
-            A confirmation message indicating that all geoprocessing is complete.
+            A message indicating the time required for all geoprocessing computations.
         '''
 
         # start time
@@ -133,9 +126,7 @@ class Watershed:
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(flwacc_file)
         if check_file is False:
-            raise Exception(
-                f'Could not retrieve driver from the file path: {flwacc_file}.'
-            )
+            raise Exception('Could not retrieve driver from the file path.')
         else:
             pass
 
@@ -163,12 +154,14 @@ class Watershed:
             with rasterio.open(flwacc_file, 'w', **raster_profile) as output_flwacc:
                 output_flwacc.write(flwacc_array, 1)
 
+        # required time
         required_time = time.time() - start_time
-        print(f'Required time: {required_time:.2f} seconds.')
+        output = f'Time required for computing flow accumulation: {required_time:.2f} seconds.'
 
-        return 'All geoprocessing has been completed.'
+        return output
 
-    def stream_and_outlets(
+    # pytest complete
+    def stream_network_and_main_outlets(
         self,
         flwdir_file: str,
         flwacc_file: str,
@@ -179,7 +172,7 @@ class Watershed:
     ) -> str:
 
         '''
-        Generates streamlines and outlet GeoDataFrames from flow direction and accumulation.
+        Generates stream network and main outlet GeoDataFrames from flow direction and accumulation.
 
         Parameters
         ----------
@@ -207,7 +200,7 @@ class Watershed:
         Returns
         -------
         str
-            A confirmation message indicating that all geoprocessing is complete.
+            A message indicating the time required for all geoprocessing computations.
         '''
 
         # start time
@@ -217,11 +210,15 @@ class Watershed:
         for file in [stream_file, outlet_file]:
             check_file = Core().is_valid_ogr_driver(file)
             if check_file is False:
-                raise Exception(
-                    f'Could not retrieve driver from the file path: {file}.'
-                )
+                raise Exception('Could not retrieve driver from the file path.')
             else:
                 pass
+
+        # check validity of flow accumulation thereshold type
+        if tacc_type not in ['percentage', 'absolute']:
+            raise Exception('Threshold accumulation type must be one of [percentage, absolute].')
+        else:
+            pass
 
         # flow direction object
         with rasterio.open(flwdir_file) as input_flwdir:
@@ -235,18 +232,10 @@ class Watershed:
             raster_profile = input_flwacc.profile
             flwacc_array = input_flwacc.read(1)
             max_flwacc = flwacc_array[flwacc_array != input_flwacc.nodata].max()
-            print(f'Maximum flow accumulation: {max_flwacc}.')
-
-        # flow path and main outlets
-        if tacc_type not in ['percentage', 'absolute']:
-            raise Exception('Threshold accumulation type must be one of [percentage, absolute].')
-        elif tacc_type == 'absolute':
-            acc_threshold = tacc_value
-        else:
-            acc_threshold = round(max_flwacc * tacc_value / 100)
-        print(f'Threshold flow accumulation: {acc_threshold}.')
 
         # flow accumulation to stream path
+        acc_threshold = tacc_value if tacc_type == 'absolute' else round(max_flwacc * tacc_value / 100)
+        print(f'Threshold flow accumulation: {acc_threshold}.')
         features = flwdir_object.streams(
             mask=flwacc_array >= acc_threshold
         )
@@ -268,11 +257,13 @@ class Watershed:
         outlet_gdf['OID'] = list(range(1, outlet_gdf.shape[0] + 1))
         outlet_gdf.to_file(outlet_file)
 
+        # required time
         required_time = time.time() - start_time
-        print(f'Required time: {required_time:.2f} seconds.')
+        output = f'Time required for computing stream network and main outlets: {required_time:.2f} seconds.'
 
-        return 'All geoprocessing has been completed.'
+        return output
 
+    # pytest complete
     def subbasin_and_pourpoints(
         self,
         flwdir_file: str,
@@ -305,11 +296,19 @@ class Watershed:
         Returns
         -------
         str
-            A confirmation message indicating that all geoprocessing is complete.
+            A message indicating the time required for all geoprocessing computations.
         '''
 
         # start time
         start_time = time.time()
+
+        # check validity of output file path
+        for file in [subbasin_file, pour_file]:
+            check_file = Core().is_valid_ogr_driver(file)
+            if check_file is False:
+                raise Exception('Could not retrieve driver from the file path.')
+            else:
+                pass
 
         # flow direction object
         with rasterio.open(flwdir_file) as input_flwdir:
@@ -357,113 +356,51 @@ class Watershed:
         # saving subbasins GeoDataFrame
         subbasin_gdf.to_file(subbasin_file)
 
+        # required time
         required_time = time.time() - start_time
-        print(f'Required time: {required_time:.2f} seconds.')
+        output = f'Time required for computing subbasins and their pour points: {required_time:.2f} seconds.'
 
-        return 'All geoprocessing has been completed.'
+        return output
 
-    def slope_from_dem(
+    # pytest complete
+    def slope_from_dem_without_pit_filling(
         self,
         dem_file: str,
-        outlet_type: str,
         slope_file: str
     ) -> str:
 
         '''
-        Computes slope from the DEM.
+        Computes slope from the DEM without pit filling.
 
         Parameters
         ----------
         dem_file : str
             Path to the input DEM raster file.
 
-        outlet_type : str
-            Type of outlet from one of [single, multiple]. The 'single' option forces all flow directions
-            toward a single outlet at the lowest pit, while 'multiple' allows for multiple outlets.
-
         slope_file : str
             Path to save the output slope raster file.
 
         Returns
         -------
         str
-            A confirmation message indicating that all geoprocessing is complete.
+            A message indicating the time required for all geoprocessing computations.
         '''
 
         # start time
         start_time = time.time()
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(slope_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+        else:
+            pass
 
         # raster profile
         with rasterio.open(dem_file) as input_dem:
             raster_profile = input_dem.profile
-
-        # temporarily suppress print of other function
-        temp_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-
-        # slope array
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            pitfill_file = os.path.join(tmp_dir, 'pitfill.tif')
-            flwdir_file = os.path.join(tmp_dir, 'flwdir.tif')
-            self.pit_fill_and_flow_direction(
-                dem_file=dem_file,
-                outlet_type=outlet_type,
-                pitfill_file=pitfill_file,
-                flwdir_file=flwdir_file
-            )
-            with rasterio.open(pitfill_file) as input_pitfill:
-                slope_array = pyflwdir.dem.slope(
-                    elevtn=input_pitfill.read(1).astype('float32'),
-                    nodata=raster_profile['nodata'],
-                    transform=raster_profile['transform']
-                )
-
-        # Restore print
-        sys.stdout = temp_stdout
-
-        # saving slope raster
-        raster_profile.update(
-            {'dtype': 'float32'}
-        )
-        with rasterio.open(slope_file, 'w', **raster_profile) as output_slope:
-            output_slope.write(slope_array, 1)
-
-        required_time = time.time() - start_time
-        print(f'Required time: {required_time:.2f} seconds.')
-
-        return 'All geoprocessing has been completed.'
-
-    def slope_from_pitfilled_dem(
-        self,
-        pfdem_file: str,
-        slope_file: str
-    ) -> str:
-
-        '''
-        Computes slope from the input pit-filled DEM.
-
-        Parameters
-        ----------
-        pfdem_file : str
-            Path to the input pit-filled DEM raster file.
-
-        slope_file : str
-            Path to save the output slope raster file.
-
-        Returns
-        -------
-        str
-            A confirmation message indicating that all geoprocessing is complete.
-        '''
-
-        # start time
-        start_time = time.time()
-
-        # slope array
-        with rasterio.open(pfdem_file) as input_pfdem:
-            raster_profile = input_pfdem.profile
             slope_array = pyflwdir.dem.slope(
-                elevtn=input_pfdem.read(1).astype('float32'),
+                elevtn=input_dem.read(1).astype('float32'),
                 nodata=raster_profile['nodata'],
                 transform=raster_profile['transform']
             )
@@ -475,28 +412,29 @@ class Watershed:
         with rasterio.open(slope_file, 'w', **raster_profile) as output_slope:
             output_slope.write(slope_array, 1)
 
+        # required time
         required_time = time.time() - start_time
-        print(f'Required time: {required_time:.2f} seconds.')
+        output = f'Time required for computing slope: {required_time:.2f} seconds.'
 
-        return 'All geoprocessing has been completed.'
+        return output
 
     def slope_classification(
         self,
         slope_file: str,
-        reclass_lowerbounds: list[int],
+        reclass_lb: list[int],
         reclass_values: list[int],
         reclass_file: str
     ) -> str:
 
         '''
-        Multiplies the slope array by 100 and reclassifies the percentage values based on the given intervals.
+        Multiplies the slope array by 100 and reclassifies the values based on the given intervals.
 
         Parameters
         ----------
         slope_file : str
             Path of the input slope raster file.
 
-        reclass_lowerbounds : list
+        reclass_lb : list
             List of left bounds of intervals. For example, [0, 2, 5] would be treated as
             three intervals: [0, 2), [2, 5), and [5, maximum slope).
 
@@ -536,45 +474,53 @@ class Watershed:
         Returns
         -------
         str
-            A confirmation message indicating that all geoprocessing is complete.
+            A message indicating the time required for all geoprocessing computations.
         '''
 
-        # start time
+        # Start time
         start_time = time.time()
 
-        # check length of reclass values
-        if len(reclass_values) == len(reclass_lowerbounds):
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(reclass_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+        else:
+            pass
+
+        # check lengths of lowerbounds and reclass values
+        if len(reclass_values) == len(reclass_lb):
             pass
         else:
-            raise Exception('Both lists must have the same length.')
+            raise Exception('Both input lists must have the same length.')
 
         # slope array
         with rasterio.open(slope_file) as input_slope:
             raster_profile = input_slope.profile
             nodata = raster_profile['nodata']
-            slope_array = 100 * input_slope.read(1)
-            slope_array[slope_array == nodata * 100] = nodata
+            slope_array = 100 * input_slope.read(1).astype(float)
+            slope_array[slope_array == nodata * 100] = numpy.nan
             # slope reclassification
-            reclass_array = numpy.zeros_like(slope_array)
-            # reclass_value = 1
-            for index, rc_val in enumerate(reclass_lowerbounds):
-                if rc_val == reclass_lowerbounds[-1]:
-                    reclass_array[(slope_array >= rc_val) & (slope_array != nodata)] = reclass_values[index]
+            reclass_array = numpy.full_like(slope_array, numpy.nan)
+            for index, rc_val in enumerate(reclass_lb):
+                if rc_val == reclass_lb[-1]:
+                    true_value = (slope_array >= rc_val) & ~numpy.isnan(slope_array)
                 else:
-                    reclass_array[(slope_array >= rc_val) & (slope_array < reclass_lowerbounds[index + 1])] = reclass_values[index]
-                # reclass_value = reclass_value + 1
-            reclass_array[reclass_array == 0] = nodata
+                    true_value = (slope_array >= rc_val) & (slope_array < reclass_lb[index + 1]) & ~numpy.isnan(slope_array)
+                reclass_array[true_value] = reclass_values[index]
+            reclass_array[numpy.isnan(reclass_array)] = nodata
             # saving reclassified slope raster
             raster_profile.update(
-                {'dtype': 'int32'}
+                {
+                    'dtype': 'int32'
+                }
             )
             with rasterio.open(reclass_file, 'w', **raster_profile) as output_reclass:
-                output_reclass.write(reclass_array, 1)
+                output_reclass.write(reclass_array.astype('int32'), 1)
 
+        # required time
         required_time = time.time() - start_time
-        print(f'Required time: {required_time:.2f} seconds.')
 
-        return 'All geoprocessing has been completed.'
+        return f'Time required for computing slope: {required_time:.2f} seconds.'
 
     # pytest complete
     def delineation_files_by_single_function(
