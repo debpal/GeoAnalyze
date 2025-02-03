@@ -11,6 +11,7 @@ class Stream:
     Provides functionality for stream path operations.
     '''
 
+    # pytest pending
     def check_flow_direction(
         self,
         input_file: str
@@ -49,6 +50,7 @@ class Stream:
 
         return output
 
+    # pytest pending
     def reverse_flow_direction(
         self,
         input_file: str,
@@ -96,6 +98,7 @@ class Stream:
 
         return output
 
+    # pytest pending
     def downstream_link(
         self,
         input_file: str,
@@ -157,6 +160,7 @@ class Stream:
 
         return stream_gdf
 
+    # pytest pending
     def junction_points(
         self,
         input_file: str,
@@ -220,6 +224,7 @@ class Stream:
 
         return output_gdf
 
+    # pytest pending
     def pour_points(
         self,
         input_file: str,
@@ -273,6 +278,7 @@ class Stream:
 
         return pour_gdf
 
+    # pytest pending
     def main_outlets(
         self,
         input_file: str,
@@ -326,6 +332,7 @@ class Stream:
 
         return outlet_gdf
 
+    # pytest pending
     def create_box_touching_selected_segment(
         self,
         input_file: str,
@@ -410,6 +417,7 @@ class Stream:
 
         return box_gdf
 
+    # pytest pending
     def create_box_crosses_segment_at_endpoint(
         self,
         input_file: str,
@@ -488,6 +496,7 @@ class Stream:
 
         return box_gdf
 
+    # pytest pending
     def create_box_touch_segment_at_endpoint(
         self,
         input_file: str,

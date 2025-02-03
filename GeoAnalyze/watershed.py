@@ -16,7 +16,6 @@ class Watershed:
     Provides functionality for watershed delineation from Digital Elevation Model (DEM).
     '''
 
-    # pytest complete
     def flow_direction_after_filling_pits(
         self,
         dem_file: str,
@@ -92,7 +91,6 @@ class Watershed:
 
         return output
 
-    # pytest complete
     def flow_accumulation(
         self,
         pitfill_file: str,
@@ -160,7 +158,6 @@ class Watershed:
 
         return output
 
-    # pytest complete
     def stream_network_and_main_outlets(
         self,
         flwdir_file: str,
@@ -263,7 +260,6 @@ class Watershed:
 
         return output
 
-    # pytest complete
     def subbasin_and_pourpoints(
         self,
         flwdir_file: str,
@@ -362,7 +358,6 @@ class Watershed:
 
         return output
 
-    # pytest complete
     def slope_from_dem_without_pit_filling(
         self,
         dem_file: str,
@@ -522,7 +517,6 @@ class Watershed:
 
         return f'Time required for computing slope: {required_time:.2f} seconds.'
 
-    # pytest complete
     def delineation_files_by_single_function(
         self,
         dem_file: str,

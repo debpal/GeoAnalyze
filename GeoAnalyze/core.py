@@ -65,6 +65,7 @@ class Core:
 
         return output
 
+    # pytest pending
     def shapefile_geometry_type(
         self,
         shape_file: str
@@ -89,6 +90,7 @@ class Core:
 
         return output
 
+    # pytest pending
     def _tmp_df_column_name(
         self,
         df_columns: list[str]

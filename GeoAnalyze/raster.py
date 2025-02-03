@@ -5,6 +5,7 @@ import rasterio.mask
 import geopandas
 import pandas
 import numpy
+from .core import Core
 
 
 class Raster:
@@ -13,7 +14,6 @@ class Raster:
     Provides functionality for raster file operations.
     '''
 
-    # pytest complete
     def count_data_cells(
         self,
         raster_file: str
@@ -39,7 +39,6 @@ class Raster:
 
         return output
 
-    # pytest complete
     def count_nodata_cells(
         self,
         raster_file: str
@@ -67,7 +66,7 @@ class Raster:
 
     def counting_unique_values(
         self,
-        input_file: str,
+        raster_file: str,
         csv_file: str,
         multiplier: float = 1
     ) -> pandas.DataFrame:
@@ -79,7 +78,7 @@ class Raster:
 
         Parameters
         ----------
-        input_file : str
+        raster_file : str
             Path to the input raster file.
 
         csv_file : str
@@ -96,7 +95,7 @@ class Raster:
             and their counts as a percentage of the total.
         '''
 
-        with rasterio.open(input_file) as input_raster:
+        with rasterio.open(raster_file) as input_raster:
             raster_profile = input_raster.profile
             raster_array = input_raster.read(1)
             value_array = (multiplier * raster_array[raster_array != raster_profile['nodata']]).round()
@@ -118,8 +117,8 @@ class Raster:
 
     def boundary_polygon(
         self,
-        input_file: str,
-        output_file: str
+        raster_file: str,
+        shape_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -127,10 +126,10 @@ class Raster:
 
         Parameters
         ----------
-        input_file : str
+        raster_file : str
             Path to the input raster file.
 
-        output_file : str
+        shape_file : str
             Path to save the output shapefile.
 
         Returns
@@ -139,7 +138,15 @@ class Raster:
             A GeoDataFrame containing the boundary polygons extracted from the raster.
         '''
 
-        with rasterio.open(input_file) as input_raster:
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(shape_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # saving raster boundary GeoDataFrame
+        with rasterio.open(raster_file) as input_raster:
             raster_array = input_raster.read(1)
             raster_array[raster_array != input_raster.nodata] = 1
             mask = raster_array == 1
@@ -158,10 +165,11 @@ class Raster:
             gdf = gdf[gdf.is_valid].reset_index(drop=True)
             gdf['bid'] = range(1, gdf.shape[0] + 1)
             gdf = gdf[['bid', 'geometry']]
-            gdf.to_file(output_file)
+            gdf.to_file(shape_file)
 
         return gdf
 
+    # pytest pending
     def resolution_rescaling(
         self,
         input_file: str,
@@ -250,6 +258,7 @@ class Raster:
 
         return affine_matrix
 
+    # pytest pending
     def resolution_rescaling_with_mask(
         self,
         input_file: str,
@@ -344,6 +353,7 @@ class Raster:
 
         return affine_matrix
 
+    # pytest pending
     def crs_reprojection(
         self,
         input_file: str,
@@ -432,6 +442,7 @@ class Raster:
 
         return affine_matrix
 
+    # pytest pending
     def nodata_conversion_from_value(
         self,
         input_file: str,
@@ -482,6 +493,7 @@ class Raster:
 
         return output_profile
 
+    # pytest pending
     def nodata_value_change(
         self,
         input_file: str,
@@ -538,6 +550,7 @@ class Raster:
 
         return raster_profile
 
+    # pytest pending
     def clipping_by_shapes(
         self,
         input_file: str,
@@ -588,6 +601,7 @@ class Raster:
 
         return output_profile
 
+    # pytest pending
     def array_from_geometries(
         self,
         shape_file: str,

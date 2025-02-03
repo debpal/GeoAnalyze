@@ -11,7 +11,6 @@ class Shape:
     Provides functionality for shapefile operations.
     '''
 
-    # pytest complete
     def column_retain(
         self,
         input_file: str,
@@ -61,7 +60,6 @@ class Shape:
 
         return gdf
 
-    # pytest complete
     def column_delete(
         self,
         input_file: str,
@@ -109,7 +107,6 @@ class Shape:
 
         return gdf
 
-    # pytest complete
     def column_add_for_id(
         self,
         input_file: str,
@@ -157,7 +154,6 @@ class Shape:
 
         return gdf
 
-    # pytest complete
     def crs_reprojection(
         self,
         input_file: str,
@@ -203,6 +199,7 @@ class Shape:
 
         return str(gdf.crs)
 
+    # pytest pending
     def polygons_to_boundary_lines(
         self,
         input_file: str,
@@ -232,6 +229,7 @@ class Shape:
 
         return gdf
 
+    # pytest pending
     def fill_polygons_after_explode(
         self,
         input_file: str,
@@ -291,6 +289,7 @@ class Shape:
 
         return gdf
 
+    # pytest pending
     def fill_polygons(
         self,
         input_file: str,
@@ -351,6 +350,7 @@ class Shape:
 
         return gdf
 
+    # pytest pending
     def fill_polygons_after_merge(
         self,
         input_file: str,
@@ -420,6 +420,7 @@ class Shape:
 
         return gdf
 
+    # pytest pending
     def extract_spatial_join_geometries(
         self,
         input_file: str,
@@ -479,6 +480,7 @@ class Shape:
 
         return extract_gdf
 
+    # pytest pending
     def polygons_area_cumsum_count(
         self,
         input_file: str
@@ -535,6 +537,7 @@ class Shape:
 
         return output
 
+    # pytest pending
     def remove_polygons_by_area_cumsum_percent(
         self,
         input_file: str,
@@ -607,6 +610,7 @@ class Shape:
 
         return gdf
 
+    # pytest pending
     def nondecimal_float_column_to_int(
         self,
         input_file: str
@@ -643,6 +647,7 @@ class Shape:
 
         return gdf
 
+    # pytest pending
     def aggregate_geometries_from_shapefiles(
         self,
         folder_path: str,
