@@ -1,5 +1,6 @@
 import os
 import rasterio
+import geopandas
 from .core import Core
 
 
@@ -9,7 +10,6 @@ class PackageData:
     Provides access to datasets included in the :mod:`GeoAnalyze` package.
     '''
 
-    # pytest complete
     def get_dem(
         self,
         dem_file: str
@@ -49,3 +49,22 @@ class PackageData:
                 dem_raster.write(raster_array, 1)
 
         return raster_profile
+
+    @property
+    def get_polygon_gdf(
+        self,
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Retrieves the polygon GeoDataFrame from the test data.
+        '''
+
+        # data file path
+        data_file = os.path.join(
+            os.path.dirname(__file__), 'data', 'polygon.shp'
+        )
+
+        # polygon GeoDataFrame
+        gdf = geopandas.read_file(data_file)
+
+        return gdf

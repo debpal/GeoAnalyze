@@ -253,14 +253,13 @@ class Raster:
 
         return output_profile
 
-    # pytest pending
     def resolution_rescaling_with_mask(
         self,
         input_file: str,
         mask_file: str,
         resampling_method: str,
         output_file: str
-    ) -> list[list[float]]:
+    ) -> rasterio.profiles.Profile:
 
         '''
         Rescales the raster array from its existing resolution
@@ -275,10 +274,8 @@ class Raster:
             Path to the mask raster file, defining the spatial extent and resolution.
 
         resampling_method : str
-            Method used for raster resampling. Supported options are:
-            - 'nearest': Nearest-neighbor interpolation.
-            - 'bilinear': Bilinear interpolation.
-            - 'cubic': Cubic convolution interpolation.
+            Raster resampling method with supported options from
+            :attr:`GeoAnalyze.core.Core.raster_resampling_method`.
 
         output_file : str
             Path to the output raster file.
@@ -290,18 +287,19 @@ class Raster:
             of the reprojected raster array. Each sublist represents a row of the matrix.
         '''
 
-        # mapping of resampling methods
-        resampling_function = {
-            'nearest': rasterio.enums.Resampling.nearest,
-            'bilinear': rasterio.enums.Resampling.bilinear,
-            'cubic': rasterio.enums.Resampling.cubic
-        }
-
-        # check resampling method
-        if resampling_method in resampling_function.keys():
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is True:
             pass
         else:
-            raise Exception('Input resampling method is not supported.')
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check resampling method
+        resampling_dict = Core().raster_resampling_method
+        if resampling_method in resampling_dict.keys():
+            pass
+        else:
+            raise Exception(f'Input resampling method must be one of {list(resampling_dict.keys())}.')
 
         # rescaling resolution
         with rasterio.open(mask_file) as mask_raster:
@@ -333,20 +331,18 @@ class Raster:
                 )
                 # saving output raster
                 with rasterio.open(output_file, 'w', **mask_profile) as output_raster:
-                    rescaled_raster = rasterio.warp.reproject(
+                    rasterio.warp.reproject(
                         source=rasterio.band(input_raster, 1),
                         destination=rasterio.band(output_raster, 1),
                         src_transform=mask_raster.transform,
                         src_crs=mask_raster.crs,
                         dst_transform=output_transform,
                         dst_crs=mask_raster.crs,
-                        resampling=resampling_function[resampling_method]
+                        resampling=resampling_dict[resampling_method]
                     )
-                    affine_matrix = [
-                        list(rescaled_raster[1])[i:i + 3] for i in [0, 3, 6]
-                    ]
+                    output_profile = output_raster.profile
 
-        return affine_matrix
+        return output_profile
 
     def crs_reprojection(
         self,
@@ -432,13 +428,12 @@ class Raster:
 
         return output_profile
 
-    # pytest pending
     def nodata_conversion_from_value(
         self,
         input_file: str,
         target_value: list[float],
-        nodata: float,
-        output_file: str
+        output_file: str,
+        nodata: typing.Optional[float] = None
     ) -> rasterio.profiles.Profile:
 
         '''
@@ -464,8 +459,17 @@ class Raster:
             A profile containing metadata about the output raster.
         '''
 
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # saving raster after converting raster value to NoData
         with rasterio.open(input_file) as input_raster:
             raster_profile = input_raster.profile
+            nodata = raster_profile['nodata'] if nodata is None else nodata
             input_array = input_raster.read(1)
             output_array = numpy.where(
                 numpy.isin(input_array, target_value),
@@ -479,7 +483,7 @@ class Raster:
             )
             with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
                 output_raster.write(output_array, 1)
-                output_profile = dict(output_raster.profile)
+                output_profile = output_raster.profile
 
         return output_profile
 
@@ -521,6 +525,7 @@ class Raster:
         else:
             raise Exception('Could not retrieve driver from the file path.')
 
+        # saving raster after changing NoData value
         with rasterio.open(input_file) as input_raster:
             raster_profile = input_raster.profile
             output_array = numpy.where(
@@ -563,6 +568,14 @@ class Raster:
             A profile containing metadata about the output raster.
         '''
 
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # saving clipped raster
         with rasterio.open(input_file) as input_raster:
             raster_profile = input_raster.profile.copy()
             gdf = geopandas.read_file(shape_file)
@@ -586,7 +599,6 @@ class Raster:
 
         return output_profile
 
-    # pytest pending
     def array_from_geometries(
         self,
         shape_file: str,
@@ -626,6 +638,13 @@ class Raster:
         profile
             A profile containing metadata about the output raster.
         '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
 
         # input shapes
         gdf = geopandas.read_file(shape_file)

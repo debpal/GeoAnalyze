@@ -123,11 +123,19 @@ class Core:
     ) -> dict[str, rasterio.enums.Resampling]:
 
         '''
-        Returns the dictionary of raster resampling method. Supported options are:
-            - `nearest`: Nearest-neighbor interpolation.
-            - `bilinear`: Bilinear interpolation.
-            - `cubic`: Cubic convolution interpolation.
+        Returns the dictionary of raster resampling methods.
+
+        Supported options:
+
+        =================  ===========================================
+        Method             Description
+        =================  ===========================================
+        nearest            Nearest-neighbor interpolation.
+        bilinear           Bilinear interpolation.
+        cubic              Cubic interpolation.
+        =================  ===========================================
         '''
+        
         resampling_dictionary = {
             'nearest': rasterio.enums.Resampling.nearest,
             'bilinear': rasterio.enums.Resampling.bilinear,
