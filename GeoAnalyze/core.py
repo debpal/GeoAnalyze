@@ -1,7 +1,7 @@
 import string
 import fiona
 import pyogrio
-import rasterio.drivers
+import rasterio
 
 
 class Core:
@@ -116,6 +116,25 @@ class Core:
         output = string.ascii_lowercase[:(max_length + 1)]
 
         return output
+
+    @property
+    def raster_resampling_method(
+        self
+    ) -> dict[str, rasterio.enums.Resampling]:
+
+        '''
+        Returns the dictionary of raster resampling method. Supported options are:
+            - `nearest`: Nearest-neighbor interpolation.
+            - `bilinear`: Bilinear interpolation.
+            - `cubic`: Cubic convolution interpolation.
+        '''
+        resampling_dictionary = {
+            'nearest': rasterio.enums.Resampling.nearest,
+            'bilinear': rasterio.enums.Resampling.bilinear,
+            'cubic': rasterio.enums.Resampling.cubic
+        }
+
+        return resampling_dictionary
 
     def _github_action(
         self,

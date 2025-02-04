@@ -169,14 +169,13 @@ class Raster:
 
         return gdf
 
-    # pytest pending
     def resolution_rescaling(
         self,
         input_file: str,
         target_resolution: int,
         resampling_method: str,
         output_file: str
-    ) -> list[list[float]]:
+    ) -> rasterio.profiles.Profile:
 
         '''
         Rescales the raster array from the existing resolution to a new target resolution.
@@ -190,33 +189,31 @@ class Raster:
             Desired resolution of the output raster file.
 
         resampling_method : str
-            Method used for raster resampling. Supported options are:
-            - 'nearest': Nearest-neighbor interpolation.
-            - 'bilinear': Bilinear interpolation.
-            - 'cubic': Cubic convolution interpolation.
+            Raster resampling method with supported options from
+            :attr:`GeoAnalyze.core.Core.raster_resampling_method`.
 
         output_file : str
             Path to the output raster file.
 
         Returns
         -------
-        list
-            A nested list representation of the 3x3 affine transformation matrix
-            of the reprojected raster array. Each sublist represents a row of the matrix.
+        profile
+            A profile containing metadata about the output raster.
         '''
 
-        # mapping of resampling methods
-        resampling_function = {
-            'nearest': rasterio.enums.Resampling.nearest,
-            'bilinear': rasterio.enums.Resampling.bilinear,
-            'cubic': rasterio.enums.Resampling.cubic
-        }
-
-        # check resampling method
-        if resampling_method in resampling_function.keys():
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is True:
             pass
         else:
-            raise Exception('Input resampling method is not supported.')
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check resampling method
+        resampling_dict = Core().raster_resampling_method
+        if resampling_method in resampling_dict.keys():
+            pass
+        else:
+            raise Exception(f'Input resampling method must be one of {list(resampling_dict.keys())}.')
 
         # rescaling resolution
         with rasterio.open(input_file) as input_raster:
@@ -243,20 +240,18 @@ class Raster:
             )
             # saving output raster
             with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
-                rescaled_raster = rasterio.warp.reproject(
+                rasterio.warp.reproject(
                     source=rasterio.band(input_raster, 1),
                     destination=rasterio.band(output_raster, 1),
                     src_transform=input_raster.transform,
                     src_crs=input_raster.crs,
                     dst_transform=output_transform,
                     dst_crs=input_raster.crs,
-                    resampling=resampling_function[resampling_method]
+                    resampling=resampling_dict[resampling_method]
                 )
-                affine_matrix = [
-                    list(rescaled_raster[1])[i:i + 3] for i in [0, 3, 6]
-                ]
+                output_profile = output_raster.profile
 
-        return affine_matrix
+        return output_profile
 
     # pytest pending
     def resolution_rescaling_with_mask(
@@ -353,14 +348,13 @@ class Raster:
 
         return affine_matrix
 
-    # pytest pending
     def crs_reprojection(
         self,
         input_file: str,
         resampling_method: str,
         target_crs: str,
         output_file: str
-    ) -> list[list[float]]:
+    ) -> rasterio.profiles.Profile:
 
         '''
         Reprojects a raster array to a new Coordinate Reference System.
@@ -371,10 +365,8 @@ class Raster:
             Path to the input raster file.
 
         resampling_method : str
-            Method used for raster resampling. Supported options are:
-            - 'nearest': Nearest-neighbor interpolation.
-            - 'bilinear': Bilinear interpolation.
-            - 'cubic': Cubic convolution interpolation.
+            Raster resampling method with supported options from
+            :attr:`GeoAnalyze.core.Core.raster_resampling_method`.
 
         target_crs : str
             Target Coordinate Reference System for the output raster (e.g., 'EPSG:4326').
@@ -384,23 +376,23 @@ class Raster:
 
         Returns
         -------
-        list
-            A nested list representation of the 3x3 affine transformation matrix
-            of the reprojected raster array. Each sublist represents a row of the matrix.
+        profile
+            A profile containing metadata about the output raster.
         '''
 
-        # mapping of resampling methods
-        resampling_function = {
-            'nearest': rasterio.enums.Resampling.nearest,
-            'bilinear': rasterio.enums.Resampling.bilinear,
-            'cubic': rasterio.enums.Resampling.cubic
-        }
-
-        # check resampling method
-        if resampling_method in resampling_function.keys():
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is True:
             pass
         else:
-            raise Exception('Input resampling method is not supported.')
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check resampling method
+        resampling_dict = Core().raster_resampling_method
+        if resampling_method in resampling_dict.keys():
+            pass
+        else:
+            raise Exception(f'Input resampling method must be one of {list(resampling_dict.keys())}.')
 
         # reproject Coordinate Reference System
         with rasterio.open(input_file) as input_raster:
@@ -427,20 +419,18 @@ class Raster:
             )
             # saving output raster
             with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
-                reproject_raster = rasterio.warp.reproject(
+                rasterio.warp.reproject(
                     source=rasterio.band(input_raster, 1),
                     destination=rasterio.band(output_raster, 1),
                     src_transform=input_raster.transform,
                     src_crs=input_raster.crs,
                     dst_transform=output_transform,
                     dst_crs=target_crs,
-                    resampling=resampling_function[resampling_method]
+                    resampling=resampling_dict[resampling_method]
                 )
-                affine_matrix = [
-                    list(reproject_raster[1])[i:i + 3] for i in [0, 3, 6]
-                ]
+                output_profile = output_raster.profile
 
-        return affine_matrix
+        return output_profile
 
     # pytest pending
     def nodata_conversion_from_value(
@@ -493,7 +483,6 @@ class Raster:
 
         return output_profile
 
-    # pytest pending
     def nodata_value_change(
         self,
         input_file: str,
@@ -525,6 +514,13 @@ class Raster:
             A profile containing metadata about the output raster.
         '''
 
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
         with rasterio.open(input_file) as input_raster:
             raster_profile = input_raster.profile
             output_array = numpy.where(
@@ -532,19 +528,8 @@ class Raster:
                 nodata,
                 input_raster.read(1)
             )
-            if dtype is None:
-                raster_profile.update(
-                    {
-                        'nodata': nodata
-                    }
-                )
-            else:
-                raster_profile.update(
-                    {
-                        'nodata': nodata,
-                        'dtype': dtype
-                    }
-                )
+            raster_profile['nodata'] = nodata
+            raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
             with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
                 output_raster.write(output_array, 1)
 

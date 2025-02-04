@@ -29,7 +29,7 @@ class PackageData:
             A profile containing metadata about the output raster.
         '''
 
-        # check output file
+        # check validity of output file path
         check_file = Core().is_valid_raster_driver(dem_file)
         if check_file is True:
             pass

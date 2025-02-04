@@ -20,7 +20,8 @@ def raster():
 def message():
 
     output = {
-        'error_driver': 'Could not retrieve driver from the file path.'
+        'error_driver': 'Could not retrieve driver from the file path.',
+        'error_resampling': f'Input resampling method must be one of {list(GeoAnalyze.core.Core().raster_resampling_method.keys())}.'
     }
 
     return output
@@ -60,6 +61,30 @@ def test_count_cells(
             shape_file=os.path.join(tmp_dir, 'dem_boundary.shp')
         )
         assert len(boundary_df) == 1
+        # pass test for raster resolution rescaling
+        output_profile = raster.resolution_rescaling(
+            input_file=dem_file,
+            target_resolution=32,
+            resampling_method='bilinear',
+            output_file=os.path.join(tmp_dir, 'dem_32m.tif')
+        )
+        assert output_profile['width'] == 1856
+        # pass test for raster Coordinate Reference System reprojectoion
+        output_profile = raster.crs_reprojection(
+            input_file=os.path.join(tmp_dir, 'dem_32m.tif'),
+            resampling_method='bilinear',
+            target_crs='EPSG:4326',
+            output_file=os.path.join(tmp_dir, 'dem_32m_EPSG4326.tif')
+        )
+        assert output_profile['height'] == 1056
+        # pass test for raster NoData value change
+        output_profile = raster.nodata_value_change(
+            input_file=os.path.join(tmp_dir, 'dem_32m.tif'),
+            nodata=0,
+            output_file=os.path.join(tmp_dir, 'dem_32m_NoData_0.tif'),
+            dtype='float32'
+        )
+        assert output_profile['nodata'] == 0
 
 
 def test_error_raster_file_driver(
@@ -68,16 +93,67 @@ def test_error_raster_file_driver(
     message
 ):
 
-    # error test for invalid file path for accessing DEM raster file
+    # error test of invalid file path for accessing DEM raster file
     with pytest.raises(Exception) as exc_info:
         packagedata.get_dem(
             dem_file='dem.tifff',
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test for invalid file path  for raster boundary polygon GeoDataFrame
+    # error test of invalid file path for raster resolution rescaling
+    with pytest.raises(Exception) as exc_info:
+        raster.resolution_rescaling(
+            input_file='dem.tif',
+            target_resolution=32,
+            resampling_method='bilinear',
+            output_file='dem_32m.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # error test of invalid file path for raster boundary polygon GeoDataFrame
     with pytest.raises(Exception) as exc_info:
         raster.boundary_polygon(
             raster_file='dem.tif',
             shape_file='dem_boundary.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # error test of invalid file path for raster Coordinate Reference System reprojectoion
+    with pytest.raises(Exception) as exc_info:
+        raster.crs_reprojection(
+            input_file='dem.tif',
+            resampling_method='bilinear',
+            target_crs='EPSG:4326',
+            output_file='dem_EPSG4326.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # error test of invalid file path for raster NoData value change
+    with pytest.raises(Exception) as exc_info:
+        raster.nodata_value_change(
+            input_file='dem.tif',
+            nodata=0,
+            output_file='dem_NoData_0.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+
+
+def test_error_resampling_method(
+    raster,
+    message
+):
+
+    # error test of resampling method for raster resolution rescaling
+    with pytest.raises(Exception) as exc_info:
+        raster.resolution_rescaling(
+            input_file='dem.tif',
+            target_resolution=32,
+            resampling_method='bilinearr',
+            output_file='dem_32m.tif'
+        )
+    assert exc_info.value.args[0] == message['error_resampling']
+    # error test of resampling method for raster Coordinate Reference System reprojectoion
+    with pytest.raises(Exception) as exc_info:
+        raster.crs_reprojection(
+            input_file='dem.tif',
+            resampling_method='bilinearr',
+            target_crs='EPSG:4326',
+            output_file='dem_EPSG4326.tif'
+        )
+    assert exc_info.value.args[0] == message['error_resampling']
