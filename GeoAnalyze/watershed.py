@@ -59,18 +59,21 @@ class Watershed:
             else:
                 pass
 
+        # check validty of outlet type
+        if outlet_type in ['single', 'multiple']:
+            pass
+        else:
+            raise Exception('Outlet type must be one of [single, multiple].')
+
         # pit filling and flow direction from the DEM
         with rasterio.open(dem_file) as input_dem:
             raster_profile = input_dem.profile
-            if outlet_type not in ['single', 'multiple']:
-                raise Exception('Outlet type must be one of [single, multiple].')
-            else:
-                outlets = 'edge' if outlet_type == 'multiple' else 'min'
-                pitfill_array, flwdir_array = pyflwdir.dem.fill_depressions(
-                    elevtn=input_dem.read(1).astype('float32'),
-                    outlets=outlets,
-                    nodata=raster_profile['nodata']
-                )
+            outlets = 'edge' if outlet_type == 'multiple' else 'min'
+            pitfill_array, flwdir_array = pyflwdir.dem.fill_depressions(
+                elevtn=input_dem.read(1).astype('float32'),
+                outlets=outlets,
+                nodata=raster_profile['nodata']
+            )
             # saving pit filling raster
             raster_profile.update(
                 {'dtype': 'float32'}

@@ -16,7 +16,7 @@ class PackageData:
     ) -> rasterio.profiles.Profile:
 
         '''
-        Retrieves the Digital Elevation Model (DEM) raster from the test data.
+        Retrieves the Digital Elevation Model (DEM) raster data.
 
         Parameters
         ----------
@@ -56,12 +56,31 @@ class PackageData:
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Retrieves the polygon GeoDataFrame from the test data.
+        Retrieves the polygon GeoDataFrame data.
         '''
 
         # data file path
         data_file = os.path.join(
             os.path.dirname(__file__), 'data', 'polygon.shp'
+        )
+
+        # polygon GeoDataFrame
+        gdf = geopandas.read_file(data_file)
+
+        return gdf
+
+    @property
+    def get_stream_gdf(
+        self,
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Retrieves the stream network data.
+        '''
+
+        # data file path
+        data_file = os.path.join(
+            os.path.dirname(__file__), 'data', 'stream_lines.shp'
         )
 
         # polygon GeoDataFrame

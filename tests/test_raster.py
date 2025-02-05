@@ -28,7 +28,7 @@ def message():
     return output
 
 
-def test_count_cells(
+def test_functions(
     packagedata,
     raster
 ):
@@ -44,6 +44,10 @@ def test_count_cells(
         polygon_gdf = packagedata.get_polygon_gdf
         assert isinstance(polygon_gdf, geopandas.GeoDataFrame)
         polygon_gdf.to_file(os.path.join(tmp_dir, 'polygon.shp'))
+        # accessing stream GeoDataFrame
+        stream_gdf = packagedata.get_stream_gdf
+        assert isinstance(stream_gdf, geopandas.GeoDataFrame)
+        stream_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
         # pass test for counting raster data cells
         data_cells = raster.count_data_cells(
             raster_file=dem_file
@@ -105,6 +109,23 @@ def test_count_cells(
             output_file=os.path.join(tmp_dir, 'dem_32m_clipped.tif')
         )
         assert output_profile['width'] == 979
+        # pass test of raster array from geometries
+        raster.array_from_geometries(
+            shape_file=os.path.join(tmp_dir, 'stream.shp'),
+            value_column='flw_id',
+            mask_file=dem_file,
+            nodata=-9999,
+            dtype='int32',
+            output_file=os.path.join(tmp_dir, 'stream.tif')
+        )
+        assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'stream.tif')) == 12096
+        # pass test of raster NoData conversion from value
+        raster.nodata_conversion_from_value(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            target_value=[1, 9],
+            output_file=os.path.join(tmp_dir, 'stream_NoData.tif')
+        )
+        assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'stream_NoData.tif')) == 9521
 
 
 def test_error_raster_file_driver(
@@ -113,20 +134,20 @@ def test_error_raster_file_driver(
     message
 ):
 
-    # error test of invalid file path for accessing DEM raster file
+    # accessing DEM raster file
     with pytest.raises(Exception) as exc_info:
         packagedata.get_dem(
             dem_file='dem.tifff',
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test of invalid file path for raster boundary polygon GeoDataFrame
+    # raster boundary polygon GeoDataFrame
     with pytest.raises(Exception) as exc_info:
         raster.boundary_polygon(
             raster_file='dem.tif',
             shape_file='dem_boundary.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test of invalid file path for raster resolution rescaling
+    # raster resolution rescaling
     with pytest.raises(Exception) as exc_info:
         raster.resolution_rescaling(
             input_file='dem.tif',
@@ -135,7 +156,7 @@ def test_error_raster_file_driver(
             output_file='dem_32m.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test of invalid file path for raster resolution rescaling with mask
+    # raster resolution rescaling with mask
     with pytest.raises(Exception) as exc_info:
         raster.resolution_rescaling_with_mask(
             input_file='dem_32m.tif',
@@ -144,7 +165,7 @@ def test_error_raster_file_driver(
             output_file='dem_16m.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test of invalid file path for raster Coordinate Reference System reprojectoion
+    # raster Coordinate Reference System reprojectoion
     with pytest.raises(Exception) as exc_info:
         raster.crs_reprojection(
             input_file='dem.tif',
@@ -153,7 +174,7 @@ def test_error_raster_file_driver(
             output_file='dem_EPSG4326.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test of invalid file path for raster NoData value change
+    # raster NoData value change
     with pytest.raises(Exception) as exc_info:
         raster.nodata_value_change(
             input_file='dem.tif',
@@ -161,7 +182,7 @@ def test_error_raster_file_driver(
             output_file='dem_NoData_0.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test of invalid file path for raster array from geometries
+    # raster array from geometries
     with pytest.raises(Exception) as exc_info:
         raster.array_from_geometries(
             shape_file='stream.shp',
@@ -172,7 +193,7 @@ def test_error_raster_file_driver(
             output_file='stream.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test of invalid file path for raster NoData conversion from value
+    # raster NoData conversion from value
     with pytest.raises(Exception) as exc_info:
         raster.nodata_conversion_from_value(
             input_file='stream.tif',
@@ -180,7 +201,7 @@ def test_error_raster_file_driver(
             output_file='stream_NoData.tifff',
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # error test of invalid file path for raster clipping by shapes
+    # raster clipping by shapes
     with pytest.raises(Exception) as exc_info:
         raster.clipping_by_shapes(
             input_file='dem.tif',
@@ -195,7 +216,7 @@ def test_error_resampling_method(
     message
 ):
 
-    # error test of resampling method for raster resolution rescaling
+    # raster resolution rescaling
     with pytest.raises(Exception) as exc_info:
         raster.resolution_rescaling(
             input_file='dem.tif',
@@ -204,7 +225,7 @@ def test_error_resampling_method(
             output_file='dem_32m.tif'
         )
     assert exc_info.value.args[0] == message['error_resampling']
-    # error test of resampling method for raster resolution rescaling with mask
+    # raster resolution rescaling with mask
     with pytest.raises(Exception) as exc_info:
         raster.resolution_rescaling_with_mask(
             input_file='dem_32m.tif',
@@ -213,7 +234,7 @@ def test_error_resampling_method(
             output_file='dem_16m.tif'
         )
     assert exc_info.value.args[0] == message['error_resampling']
-    # error test of resampling method for raster Coordinate Reference System reprojectoion
+    # raster Coordinate Reference System reprojectoion
     with pytest.raises(Exception) as exc_info:
         raster.crs_reprojection(
             input_file='dem.tif',

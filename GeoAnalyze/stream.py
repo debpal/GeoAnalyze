@@ -11,20 +11,19 @@ class Stream:
     Provides functionality for stream path operations.
     '''
 
-    # pytest pending
-    def check_flow_direction(
+    def is_flw_path_us_to_ds(
         self,
-        input_file: str
+        stream_file: str
     ) -> bool:
 
         '''
-        Checks the flow direction from upstream to downstream
+        Checks the flow path direction from upstream to downstream
         by comparing the number of segments in the flow path
         to the number of their most upstream points.
 
         Parameters
         ----------
-        input_file : str
+        stream_file : str
             Path to the input stream shapefile.
 
         Returns
@@ -35,8 +34,14 @@ class Stream:
             flow direction; otherwise, False.
         '''
 
-        # input stream GeoDataFrame
-        gdf = geopandas.read_file(input_file)
+        # check LineString geometry type
+        if Core().shapefile_geometry_type(stream_file) == 'LineString':
+            pass
+        else:
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
+        # stream GeoDataFrame
+        gdf = geopandas.read_file(stream_file)
         gdf = gdf.explode(
             index_parts=False,
             ignore_index=True
@@ -51,10 +56,10 @@ class Stream:
         return output
 
     # pytest pending
-    def reverse_flow_direction(
+    def flw_path_reverse(
         self,
         input_file: str,
-        output_stream: str
+        output_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -66,7 +71,7 @@ class Stream:
         input_file : str
             Path to the input stream shapefile.
 
-        output_stream : str
+        output_file : str
             Path to save the output stream shapefile.
 
         Returns
@@ -74,6 +79,19 @@ class Stream:
         GeoDataFrame
             A GeoDataFrame with each stream segment’s coordinates reversed.
         '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check LineString geometry type
+        if Core().shapefile_geometry_type(input_file) == 'LineString':
+            pass
+        else:
+            raise Exception('Input shapefile must have geometries of type LineString.')
 
         # input stream GeoDataFrame
         gdf = geopandas.read_file(input_file)
@@ -94,21 +112,20 @@ class Stream:
         gdf = gdf.dissolve(by=[tmp_col]).reset_index(drop=True)
 
         # saving GeoDataFrame
-        gdf.to_file(output_stream)
+        gdf.to_file(output_file)
 
         return output
 
-    # pytest pending
-    def downstream_link(
+    def connectivity_to_downstream_segment(
         self,
         input_file: str,
         stream_col: str,
-        link_col: str,
-        output_stream: str
+        output_file: str,
+        link_col: str = 'ds_id'
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Identifies downstream link identifiers for all flow segments.
+        Identifies connected downstream segment identifiers.
 
         Parameters
         ----------
@@ -118,17 +135,30 @@ class Stream:
         stream_col : str
             Column name in the stream shapefile containing a unique identifier for each stream segment.
 
-        link_col : str
-            Column name where the downstream link identifiers of flow segments will be stored.
-
-        output_stream : str
+        output_file : str
             Path to save the output stream shapefile.
+
+        link_col : str, optional
+            Column name to store connected downstream segment identifiers, default is 'ds_id'.
 
         Returns
         -------
         GeoDataFrame
-            A GeoDataFrame with an additional column for downstream link identifiers of flow segments.
+            A GeoDataFrame with an additional column for connected downstream segment identifiers.
         '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check LineString geometry type
+        if Core().shapefile_geometry_type(input_file) == 'LineString':
+            pass
+        else:
+            raise Exception('Input shapefile must have geometries of type LineString.')
 
         # stream geodataframe
         stream_gdf = geopandas.read_file(input_file)
@@ -141,7 +171,7 @@ class Stream:
             idx: line.coords[-1] for idx, line in zip(stream_gdf[stream_col], stream_gdf.geometry)
         }
 
-        # link between flow segments
+        # downstream segment identifiers
         downstream_link = {}
         for dp_id in downstream_points.keys():
             up_link = list(
@@ -154,24 +184,24 @@ class Stream:
             else:
                 downstream_link[dp_id] = -1
 
-        # update stream GeoDataFrame with downstream link and save
+        # saving updated stream GeoDataFrame with connected downstream segment identifiers
         stream_gdf[link_col] = downstream_link.values()
-        stream_gdf.to_file(output_stream)
+        stream_gdf.to_file(output_file)
 
         return stream_gdf
 
-    # pytest pending
-    def junction_points(
+    def point_junctions(
         self,
         input_file: str,
         stream_col: str,
-        output_file: str
+        output_file: str,
+        junction_col: str = 'j_id'
     ) -> geopandas.GeoDataFrame:
 
         '''
         Identifies junction points in the stream path and maps stream segment identifiers
         whose most downstream points coincide with these junction points. Additionally,
-        a new column 'jid' will be added to assign a unique identifier to each junction point, starting from 1.
+        a new column 'j_id' will be added to assign a unique identifier to each junction point, starting from 1.
 
         Parameters
         ----------
@@ -184,17 +214,33 @@ class Stream:
         output_file : str
             Path to save the output junction point shapefile.
 
+        junction_col : str, optional
+            Column name to stroe junction point identifiers, default is 'j_id'.
+
         Returns
         -------
         GeoDataFrame
             A GeoDataFrame of junction points with their corresponding stream segment identifiers.
         '''
 
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check LineString geometry type
+        if Core().shapefile_geometry_type(input_file) == 'LineString':
+            pass
+        else:
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
         # stream geodataframe
         stream_gdf = geopandas.read_file(input_file)
 
         # downstream endpoint GeoDataFrame
-        downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
+        downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(x.coords[-1]))
         downstream_gdf = geopandas.GeoDataFrame(
             {
                 stream_col: stream_gdf[stream_col],
@@ -214,7 +260,7 @@ class Stream:
         # save the output GeoDataFrame
         output_gdf = geopandas.GeoDataFrame(
             data={
-                'jid': range(1, len(junction_groups) + 1),
+                junction_col: range(1, len(junction_groups) + 1),
                 junction_groups.name: junction_groups.values
             },
             geometry=list(junction_groups.index),
@@ -225,14 +271,14 @@ class Stream:
         return output_gdf
 
     # pytest pending
-    def pour_points(
+    def point_segment_subbasin_drainage(
         self,
         input_file: str,
         output_file: str
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Generates a GeoDataFrame of pour points for flow segments in the stream path.
+        Generates a GeoDataFrame of subbasin drainage points for flow segments in the stream path.
         For each flow segment, the most downstream point is selected unless it is a junction point,
         in which case the second most downstream point is used.
 
@@ -247,18 +293,31 @@ class Stream:
         Returns
         -------
         GeoDataFrame
-            A GeoDataFrame containing the pour points.
+            A GeoDataFrame containing the subbasin drainage points.
         '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check LineString geometry type
+        if Core().shapefile_geometry_type(input_file) == 'LineString':
+            pass
+        else:
+            raise Exception('Input shapefile must have geometries of type LineString.')
 
         # stream GeoDataFrame
         stream_gdf = geopandas.read_file(input_file)
 
         # junction points
-        downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
+        downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(x.coords[-1]))
         point_count = downstream_points.value_counts()
         junction_points = point_count[point_count > 1].index.to_list()
 
-        # pour points
+        # subbasin drainage points
         pour_gdf = stream_gdf.copy()
         pour_gdf['junction'] = pour_gdf['geometry'].apply(
             lambda x: 'YES' if shapely.Point(*x.coords[-1]) in junction_points else 'NO'
@@ -273,16 +332,14 @@ class Stream:
         )
         pour_gdf = pour_gdf.drop(columns=['pour_coords', 'junction'])
 
-        # save the outlet point GeoDataFrame
+        # save the subbasin drainage point GeoDataFrame
         pour_gdf.to_file(output_file)
 
         return pour_gdf
 
-    # pytest pending
-    def main_outlets(
+    def point_main_outlets(
         self,
         input_file: str,
-        stream_col: str,
         output_file: str
     ) -> geopandas.GeoDataFrame:
 
@@ -295,9 +352,6 @@ class Stream:
         input_file : str
             Path to the input stream shapefile.
 
-        stream_col : str
-            Column name in the stream shapefile containing a unique identifier for each stream segment.
-
         output_file : str
             Path to save the output outlet point shapefile.
 
@@ -308,20 +362,25 @@ class Stream:
             with their associated flow segment identifiers.
         '''
 
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check LineString geometry type
+        if Core().shapefile_geometry_type(input_file) == 'LineString':
+            pass
+        else:
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
         # stream geodataframe
         stream_gdf = geopandas.read_file(input_file)
 
-        # downstream endpoint GeoDataFrame
-        downstream_points = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
-        downstream_gdf = geopandas.GeoDataFrame(
-            {
-                stream_col: stream_gdf[stream_col],
-                'geometry': downstream_points
-            },
-            crs=stream_gdf.crs
-        )
-
         # outlet point GeoDataFrame
+        downstream_gdf = stream_gdf.copy()
+        downstream_gdf['geometry'] = stream_gdf.geometry.apply(lambda x: shapely.Point(*x.coords[-1]))
         downstream_counts = downstream_gdf['geometry'].value_counts()
         outlet_points = downstream_counts[downstream_counts == 1].index
         outlet_gdf = downstream_gdf[downstream_gdf['geometry'].isin(outlet_points.tolist())]

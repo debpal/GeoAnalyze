@@ -20,7 +20,6 @@ def test_delete_by_name(
     file
 ):
 
-    # pass test
     with tempfile.TemporaryDirectory() as tmp_dir:
         assert len(os.listdir(tmp_dir)) == 0
         file_path = os.path.join(tmp_dir, 'temporary.txt')

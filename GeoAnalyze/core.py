@@ -135,7 +135,7 @@ class Core:
         cubic              Cubic interpolation.
         =================  ===========================================
         '''
-        
+
         resampling_dictionary = {
             'nearest': rasterio.enums.Resampling.nearest,
             'bilinear': rasterio.enums.Resampling.bilinear,

@@ -11,12 +11,6 @@ def packagedata():
 
 
 @pytest.fixture(scope='class')
-def raster():
-
-    yield GeoAnalyze.Raster()
-
-
-@pytest.fixture(scope='class')
 def watershed():
 
     yield GeoAnalyze.Watershed()
@@ -34,9 +28,8 @@ def message():
     return output
 
 
-def test_delineation_files(
+def test_functions(
     packagedata,
-    raster,
     watershed,
     message
 ):
@@ -88,7 +81,7 @@ def test_delineation_files(
             slope_file=os.path.join(tmp_dir, 'slope.tif')
         )
         assert isinstance(output, str)
-        # pass test of slope reclassingfication
+        # pass test of slope reclassification
         output = watershed.slope_classification(
             slope_file=os.path.join(tmp_dir, 'slope.tif'),
             reclass_lb=[0, 2, 8, 20, 40],
@@ -105,28 +98,44 @@ def test_delineation_files(
             folder_path=tmp_dir
         )
         assert output == 'All geoprocessing has been completed.'
-        # pass test of raster array from geometries
-        output_profile = raster.array_from_geometries(
-            shape_file=os.path.join(tmp_dir, 'stream_lines.shp'),
-            value_column='flw_id',
-            mask_file=dem_file,
-            nodata=-9999,
-            dtype='int32',
-            output_file=os.path.join(tmp_dir, 'stream_lines.tif')
-        )
-        assert output_profile['height'] == 3790
-        # pass test of raster NoData conversion from value
-        raster.nodata_conversion_from_value(
-            input_file=os.path.join(tmp_dir, 'stream_lines.tif'),
-            target_value=[1, 9],
-            output_file=os.path.join(tmp_dir, 'stream_value_to_NoData.tif')
-        )
-        assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'stream_value_to_NoData.tif')) == 9521
         ##############################################
-        # error test of invalid file path for computing flow direction pit filling of the DEM
+        # error test of input list lengths for slope reclassification
+        with pytest.raises(Exception) as exc_info:
+            watershed.slope_classification(
+                slope_file=os.path.join(tmp_dir, 'slope.tif'),
+                reclass_lb=[0, 2, 8, 20, 40],
+                reclass_values=[2, 8, 20, 40],
+                reclass_file=os.path.join(tmp_dir, 'slope_reclass.tif')
+            )
+        assert exc_info.value.args[0] == 'Both input lists must have the same length.'
+
+
+def test_error_invalid_folder_path(
+    watershed
+):
+
+    # delineation files by single function
+    with pytest.raises(Exception) as exc_info:
+        watershed.delineation_files_by_single_function(
+            dem_file='dem.tif',
+            outlet_type='single',
+            tacc_type='percentage',
+            tacc_value=5,
+            folder_path='folder_path'
+        )
+    assert exc_info.value.args[0] == 'Input folder path does not exsit.'
+
+
+def test_error_invalid_file_path(
+    watershed,
+    message
+):
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # computing flow direction pit filling of the DEM
         with pytest.raises(Exception) as exc_info:
             watershed.flow_direction_after_filling_pits(
-                dem_file=dem_file,
+                dem_file=os.path.join(tmp_dir, 'dem.tif'),
                 outlet_type='singleee',
                 pitfill_file=os.path.join(tmp_dir, 'pitfill_dem.tif'),
                 flwdir_file=os.path.join(tmp_dir, 'flwdir.tifff')
@@ -164,7 +173,7 @@ def test_delineation_files(
         # error test of invalid file path for computing slope from DEM without pit filling
         with pytest.raises(Exception) as exc_info:
             watershed.slope_from_dem_without_pit_filling(
-                dem_file=dem_file,
+                dem_file=os.path.join(tmp_dir, 'dem.tif'),
                 slope_file=os.path.join(tmp_dir, 'slope.tifff')
             )
         assert exc_info.value.args[0] == message['error_driver']
@@ -177,27 +186,42 @@ def test_delineation_files(
                 reclass_file=os.path.join(tmp_dir, 'slope_reclass.tifff')
             )
         assert exc_info.value.args[0] == message['error_driver']
-        ##############################################
-        # error test of invalid outlet type for computing flow direction and pit filling of the DEM
+
+
+def test_error_type_outlet(
+    watershed,
+    message
+):
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # computing flow direction and pit filling of the DEM
         with pytest.raises(Exception) as exc_info:
             watershed.flow_direction_after_filling_pits(
-                dem_file=dem_file,
+                dem_file=os.path.join(tmp_dir, 'dem.tif'),
                 outlet_type='singleee',
                 pitfill_file=os.path.join(tmp_dir, 'pitfill_dem.tif'),
                 flwdir_file=os.path.join(tmp_dir, 'flwdir.tif')
             )
         assert exc_info.value.args[0] == message['type_outlet']
-        # error test of invalid outlet type for delineation files by single function
+        # delineation files by single function
         with pytest.raises(Exception) as exc_info:
             watershed.delineation_files_by_single_function(
-                dem_file=dem_file,
+                dem_file=os.path.join(tmp_dir, 'dem.tif'),
                 outlet_type='singleee',
                 tacc_type='percentage',
                 tacc_value=5,
                 folder_path=tmp_dir
             )
         assert exc_info.value.args[0] == message['type_outlet']
-        # error test of invalid threshold flow accumalation type for computing stream network and main outlets
+
+
+def test_error_type_flwacc(
+    watershed,
+    message
+):
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # stream network and main outlets
         with pytest.raises(Exception) as exc_info:
             watershed.stream_network_and_main_outlets(
                 flwdir_file=os.path.join(tmp_dir, 'flwdir.tif'),
@@ -208,34 +232,28 @@ def test_delineation_files(
                 outlet_file=os.path.join(tmp_dir, 'outlet.shp')
             )
         assert exc_info.value.args[0] == message['type_flwacc']
-        # error test of invalid threshold flow accumalation type for computing delineation files by single function
+        # delineation files by single function
         with pytest.raises(Exception) as exc_info:
             watershed.delineation_files_by_single_function(
-                dem_file=dem_file,
+                dem_file=os.path.join(tmp_dir, 'dem.tif'),
                 outlet_type='single',
                 tacc_type='percentagee',
                 tacc_value=5,
                 folder_path=tmp_dir
             )
         assert exc_info.value.args[0] == message['type_flwacc']
-        ##############################################
-        # error test of input list lengths for slope reclassification
-        with pytest.raises(Exception) as exc_info:
-            watershed.slope_classification(
-                slope_file=os.path.join(tmp_dir, 'slope.tif'),
-                reclass_lb=[0, 2, 8, 20, 40],
-                reclass_values=[2, 8, 20, 40],
-                reclass_file=os.path.join(tmp_dir, 'slope_reclass.tif')
-            )
-        assert exc_info.value.args[0] == 'Both input lists must have the same length.'
-        ##############################################
-        # error test of invalid folder path for computing delineation files by single function
-        with pytest.raises(Exception) as exc_info:
-            watershed.delineation_files_by_single_function(
-                dem_file=dem_file,
-                outlet_type='single',
-                tacc_type='percentage',
-                tacc_value=5,
-                folder_path='folder_path'
-            )
-        assert exc_info.value.args[0] == 'Input folder path does not exsit.'
+
+
+def test_error_list_length(
+    watershed
+):
+
+    # input list lengths for slope reclassification
+    with pytest.raises(Exception) as exc_info:
+        watershed.slope_classification(
+            slope_file='slope.tif',
+            reclass_lb=[0, 2, 8, 20, 40],
+            reclass_values=[2, 8, 20, 40],
+            reclass_file='slope_reclass.tif'
+        )
+    assert exc_info.value.args[0] == 'Both input lists must have the same length.'

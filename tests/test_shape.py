@@ -89,6 +89,7 @@ def test_error_shapefile_driver(
     message
 ):
 
+    # retaining columns
     with pytest.raises(Exception) as exc_info:
         shape.column_retain(
             input_file='input.shp',
@@ -97,6 +98,7 @@ def test_error_shapefile_driver(
         )
     assert exc_info.value.args[0] == message['error_driver']
 
+    # deleting columns
     with pytest.raises(Exception) as exc_info:
         shape.column_delete(
             input_file='input.shp',
@@ -105,6 +107,7 @@ def test_error_shapefile_driver(
         )
     assert exc_info.value.args[0] == message['error_driver']
 
+    # adding ID column
     with pytest.raises(Exception) as exc_info:
         shape.column_add_for_id(
             input_file='input.shp',
@@ -113,6 +116,7 @@ def test_error_shapefile_driver(
         )
     assert exc_info.value.args[0] == message['error_driver']
 
+    # Coordinate Reference System reprojection
     with pytest.raises(Exception) as exc_info:
         shape.crs_reprojection(
             input_file='input.shp',
