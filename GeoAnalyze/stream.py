@@ -55,7 +55,6 @@ class Stream:
 
         return output
 
-    # pytest pending
     def flw_path_reverse(
         self,
         input_file: str,
@@ -270,7 +269,6 @@ class Stream:
 
         return output_gdf
 
-    # pytest pending
     def point_segment_subbasin_drainage(
         self,
         input_file: str,
@@ -391,8 +389,7 @@ class Stream:
 
         return outlet_gdf
 
-    # pytest pending
-    def create_box_touching_selected_segment(
+    def box_touch_selected_segment(
         self,
         input_file: str,
         column_name: str,
@@ -402,8 +399,8 @@ class Stream:
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Creates a square box polygon that touches a specified stream segment
-        in the input flow path at a randomly chosen point along the segment.
+        Creates a square box polygon that touches a specified segment
+        in the stream path at a randomly chosen point along the segment.
 
         Parameters
         ----------
@@ -429,17 +426,19 @@ class Stream:
             touches the specified stream segment at a random point.
         '''
 
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
         # input line segment
         gdf = geopandas.read_file(input_file)
         line = gdf[gdf[column_name].isin([column_value])].geometry.iloc[0]
 
         # line coords
-        if isinstance(line, shapely.LineString):
-            line_coords = line.coords[:]
-        else:
-            line_coords = []
-            for line_split in line.geoms:
-                line_coords.extend(line_split.coords[:])
+        line_coords = line.coords[:] if isinstance(line, shapely.LineString) else [c for ls in line.geoms for c in ls.coords[:]]
 
         while True:
             # choose points
@@ -464,8 +463,6 @@ class Stream:
             check_touch = line.touches(rotate_box) and not line.crosses(rotate_box)
             if check_touch is True:
                 break
-            else:
-                pass
 
         # saving box geodataframe
         box_gdf = geopandas.GeoDataFrame(
@@ -476,87 +473,7 @@ class Stream:
 
         return box_gdf
 
-    # pytest pending
-    def create_box_crosses_segment_at_endpoint(
-        self,
-        input_file: str,
-        column_name: str,
-        column_value: typing.Any,
-        box_length: float,
-        output_file: str,
-        downstream_point: bool = True
-    ) -> geopandas.GeoDataFrame:
-
-        '''
-        Creates a square box polygon that crosses a specified stream segment
-        in the input flow path and passes through an endpoint of the segment.
-
-        Parameters
-        ----------
-        input_file : str
-            Path to the input stream shapefile.
-
-        column_name : str
-            Name of the column used for selecting the target stream segment.
-
-        column_value : Any
-            Value in the specified column that identifies the target stream segment.
-
-        box_length : float
-            Length of each side of the square box polygon.
-
-        output_file : str
-            Path to save the output box polygon shapefile.
-
-        downstream_point : bool, optional
-            If True, the box is positioned to pass through the downstream endpoint
-            of the segment; if False, it passes through the upstream endpoint. Default is True.
-
-        Returns
-        -------
-        GeoDataFrame
-            A GeoDataFrame containing the box polygon, which crosses the
-            specified stream segment and passes through an endpoint of the segment.
-        '''
-
-        # input line segement
-        gdf = geopandas.read_file(input_file)
-        line = gdf[gdf[column_name].isin([column_value])].geometry.iloc[0]
-
-        # get point
-        point_coords = line.coords[-1] if downstream_point is True else line.coords[0]
-        point = shapely.Point(*point_coords)
-
-        # create box
-        box = shapely.box(
-            xmin=point.x,
-            ymin=point.y,
-            xmax=point.x + box_length,
-            ymax=point.y + box_length,
-        )
-
-        # check whether the box crosses the line; otherwise rotate
-        while True:
-            if line.crosses(box):
-                break
-            else:
-                box = shapely.affinity.rotate(
-                    geom=box,
-                    angle=random.randint(0, 360),
-                    origin=point
-                )
-
-        # saving box geodataframe
-        box_gdf = geopandas.GeoDataFrame(
-            geometry=[box],
-            crs=gdf.crs
-        )
-        box_gdf.to_file(output_file)
-
-        return box_gdf
-
-    # pytest pending
-    def create_box_touch_segment_at_endpoint(
+    def box_touch_selected_segment_at_endpoint(
         self,
         input_file: str,
         column_name: str,
@@ -598,6 +515,13 @@ class Stream:
             the specified segment in the input stream path.
         '''
 
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
         # input line segement
         gdf = geopandas.read_file(input_file)
         line = gdf[gdf[column_name].isin([column_value])].geometry.iloc[0]
@@ -611,20 +535,103 @@ class Stream:
             xmin=point.x,
             ymin=point.y,
             xmax=point.x + box_length,
-            ymax=point.y + box_length,
+            ymax=point.y + box_length
         )
 
         # check whether the box touches the line; otherwise rotate
         while True:
+            box = shapely.affinity.rotate(
+                geom=box,
+                angle=random.randint(0, 360),
+                origin=point
+            )
             check_touch = line.touches(box) and not line.crosses(box)
             if check_touch:
                 break
-            else:
-                box = shapely.affinity.rotate(
-                    geom=box,
-                    angle=random.randint(0, 360),
-                    origin=point
-                )
+
+        # saving box geodataframe
+        box_gdf = geopandas.GeoDataFrame(
+            geometry=[box],
+            crs=gdf.crs
+        )
+        box_gdf.to_file(output_file)
+
+        return box_gdf
+
+    def box_cross_selected_segment_at_endpoint(
+        self,
+        input_file: str,
+        column_name: str,
+        column_value: typing.Any,
+        box_length: float,
+        output_file: str,
+        downstream_point: bool = True
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Creates a square box polygon that crosses a specified segment
+        in the stream path and passes through an endpoint of the segment.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input stream shapefile.
+
+        column_name : str
+            Name of the column used for selecting the target stream segment.
+
+        column_value : Any
+            Value in the specified column that identifies the target stream segment.
+
+        box_length : float
+            Length of each side of the square box polygon.
+
+        output_file : str
+            Path to save the output box polygon shapefile.
+
+        downstream_point : bool, optional
+            If True, the box is positioned to pass through the downstream endpoint
+            of the segment; if False, it passes through the upstream endpoint. Default is True.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing the box polygon, which crosses the
+            specified stream segment and passes through an endpoint of the segment.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # input line segement
+        gdf = geopandas.read_file(input_file)
+        line = gdf[gdf[column_name].isin([column_value])].geometry.iloc[0]
+
+        # get point
+        point_coords = line.coords[-1] if downstream_point is True else line.coords[0]
+        point = shapely.Point(*point_coords)
+
+        # create box
+        box = shapely.box(
+            xmin=point.x,
+            ymin=point.y,
+            xmax=point.x + box_length,
+            ymax=point.y + box_length
+        )
+
+        # check whether the box crosses the line; otherwise rotate
+        while True:
+            box = shapely.affinity.rotate(
+                geom=box,
+                angle=random.randint(0, 360),
+                origin=point
+            )
+            if line.crosses(box):
+                break
 
         # saving box geodataframe
         box_gdf = geopandas.GeoDataFrame(

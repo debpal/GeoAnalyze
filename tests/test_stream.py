@@ -91,6 +91,38 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'main_outlet_points.shp')
         )
         assert stream_gdf['geometry'].iloc[-1].coords[-1] == outlet_gdf['geometry'].iloc[-1].coords[0]
+        # pass test of box touching the selected segment in a stream path
+        selected_line = stream_gdf[stream_gdf['flw_id'] == 3]['geometry'].iloc[0]
+        box_gdf = stream.box_touch_selected_segment(
+            input_file=stream_file,
+            column_name='flw_id',
+            column_value=3,
+            box_length=500,
+            output_file=os.path.join(tmp_dir, 'box.shp')
+        )
+        polygon = box_gdf.geometry.iloc[0]
+        assert selected_line.touches(polygon)
+        # pass test of box touching the selected segment at endpoint in a stream path
+        box_gdf = stream.box_touch_selected_segment_at_endpoint(
+            input_file=stream_file,
+            column_name='flw_id',
+            column_value=3,
+            box_length=500,
+            output_file=os.path.join(tmp_dir, 'box.shp')
+        )
+        polygon = box_gdf.geometry.iloc[0]
+        assert selected_line.touches(polygon)
+        # pass test of box crossing the selected segment at endpoint in a stream path
+        box_gdf = stream.box_cross_selected_segment_at_endpoint(
+            input_file=stream_file,
+            column_name='flw_id',
+            column_value=3,
+            box_length=500,
+            output_file=os.path.join(tmp_dir, 'box.shp')
+        )
+        polygon = box_gdf.geometry.iloc[0]
+        intersection = selected_line.intersection(polygon)
+        assert isinstance(intersection, shapely.MultiLineString) or len(intersection.coords[:]) > 1
 
 
 def test_error_linestring_geometry(
@@ -188,5 +220,35 @@ def test_error_shapefile_driver(
         stream.point_main_outlets(
             input_file='stream.shp',
             output_file='main_outlet_points.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # box touching the selected segment in a stream path
+    with pytest.raises(Exception) as exc_info:
+        stream.box_touch_selected_segment(
+            input_file='stream.shp',
+            column_name='flw_id',
+            column_value=3,
+            box_length=500,
+            output_file='box.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # box touching the selected segment at endpoint in a stream path
+    with pytest.raises(Exception) as exc_info:
+        stream.box_touch_selected_segment_at_endpoint(
+            input_file='stream.shp',
+            column_name='flw_id',
+            column_value=3,
+            box_length=500,
+            output_file='box.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # box crossing the selected segment at endpoint in a stream path
+    with pytest.raises(Exception) as exc_info:
+        stream.box_cross_selected_segment_at_endpoint(
+            input_file='stream.shp',
+            column_name='flw_id',
+            column_value=3,
+            box_length=500,
+            output_file='box.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
