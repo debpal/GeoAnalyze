@@ -87,7 +87,7 @@ class Stream:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if Core().shapefile_geometry_type(input_file) == 'LineString':
+        if 'LineString' in Core().shapefile_geometry_type(input_file):
             pass
         else:
             raise Exception('Input shapefile must have geometries of type LineString.')
@@ -154,7 +154,7 @@ class Stream:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if Core().shapefile_geometry_type(input_file) == 'LineString':
+        if 'LineString' in Core().shapefile_geometry_type(input_file):
             pass
         else:
             raise Exception('Input shapefile must have geometries of type LineString.')
@@ -230,7 +230,7 @@ class Stream:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if Core().shapefile_geometry_type(input_file) == 'LineString':
+        if 'LineString' in Core().shapefile_geometry_type(input_file):
             pass
         else:
             raise Exception('Input shapefile must have geometries of type LineString.')
@@ -302,7 +302,7 @@ class Stream:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if Core().shapefile_geometry_type(input_file) == 'LineString':
+        if 'LineString' in Core().shapefile_geometry_type(input_file):
             pass
         else:
             raise Exception('Input shapefile must have geometries of type LineString.')
@@ -368,7 +368,7 @@ class Stream:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if Core().shapefile_geometry_type(input_file) == 'LineString':
+        if 'LineString' in Core().shapefile_geometry_type(input_file):
             pass
         else:
             raise Exception('Input shapefile must have geometries of type LineString.')
@@ -540,14 +540,15 @@ class Stream:
 
         # check whether the box touches the line; otherwise rotate
         while True:
-            box = shapely.affinity.rotate(
-                geom=box,
-                angle=random.randint(0, 360),
-                origin=point
-            )
             check_touch = line.touches(box) and not line.crosses(box)
             if check_touch:
                 break
+            else:
+                box = shapely.affinity.rotate(
+                    geom=box,
+                    angle=random.randint(0, 360),
+                    origin=point
+                )
 
         # saving box geodataframe
         box_gdf = geopandas.GeoDataFrame(
@@ -625,13 +626,14 @@ class Stream:
 
         # check whether the box crosses the line; otherwise rotate
         while True:
-            box = shapely.affinity.rotate(
-                geom=box,
-                angle=random.randint(0, 360),
-                origin=point
-            )
             if line.crosses(box):
                 break
+            else:
+                box = shapely.affinity.rotate(
+                    geom=box,
+                    angle=random.randint(0, 360),
+                    origin=point
+                )
 
         # saving box geodataframe
         box_gdf = geopandas.GeoDataFrame(

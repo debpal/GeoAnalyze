@@ -1,6 +1,5 @@
 import os
 import tempfile
-import geopandas
 import shapely
 import GeoAnalyze
 import pytest
@@ -32,11 +31,7 @@ def message():
 @pytest.fixture
 def point_gdf():
 
-    gdf = geopandas.GeoDataFrame(
-        data={'C1': [1], 'C2': [2], 'C3': [3]},
-        geometry=[shapely.Point(0, 0)],
-        crs='EPSG:4326'
-    )
+    gdf = GeoAnalyze.core.Core()._geodataframe_point
 
     return gdf
 
@@ -49,7 +44,7 @@ def test_functions(
     with tempfile.TemporaryDirectory() as tmp_dir:
         # accessing stream GeoDataFrame
         stream_file = os.path.join(tmp_dir, 'stream.shp')
-        stream_gdf = packagedata.get_stream_gdf
+        stream_gdf = packagedata.geodataframe_stream
         stream_gdf.to_file(stream_file)
         # pass test of checking flow path direction from upstream to downstream
         check_flwpath = stream.is_flw_path_us_to_ds(
@@ -125,7 +120,7 @@ def test_functions(
         assert isinstance(intersection, shapely.MultiLineString) or len(intersection.coords[:]) > 1
 
 
-def test_error_linestring_geometry(
+def test_error_geometry(
     stream,
     point_gdf,
     message

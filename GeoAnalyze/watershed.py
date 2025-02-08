@@ -730,7 +730,7 @@ class Watershed:
             columns=['pour_coords']
         )
         pour_gdf.to_file(
-            filename=os.path.join(folder_path, 'subbasin_pour_points.shp')
+            filename=os.path.join(folder_path, 'subbasin_drainage_points.shp')
         )
         # subbasins polygon GeoDataFrame
         subbasin_array = flwdir_object.basins(

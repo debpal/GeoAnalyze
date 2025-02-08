@@ -37,7 +37,7 @@ def test_functions(
     with tempfile.TemporaryDirectory() as tmp_dir:
         # saving DEM raster file
         dem_file = os.path.join(tmp_dir, 'dem.tif')
-        packagedata.get_dem(
+        packagedata.raster_dem(
             dem_file=dem_file
         )
         ##############################################

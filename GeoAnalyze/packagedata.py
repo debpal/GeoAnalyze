@@ -10,7 +10,7 @@ class PackageData:
     Provides access to datasets included in the :mod:`GeoAnalyze` package.
     '''
 
-    def get_dem(
+    def raster_dem(
         self,
         dem_file: str
     ) -> rasterio.profiles.Profile:
@@ -51,17 +51,17 @@ class PackageData:
         return raster_profile
 
     @property
-    def get_polygon_gdf(
+    def geodataframe_stream(
         self,
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Retrieves the polygon GeoDataFrame data.
+        Retrieves the GeoDataFrame of stream network lines.
         '''
 
         # data file path
         data_file = os.path.join(
-            os.path.dirname(__file__), 'data', 'polygon.shp'
+            os.path.dirname(__file__), 'data', 'stream_Oulanka.shp'
         )
 
         # polygon GeoDataFrame
@@ -70,17 +70,36 @@ class PackageData:
         return gdf
 
     @property
-    def get_stream_gdf(
+    def geodataframe_subbasin(
         self,
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Retrieves the stream network data.
+        Retrieves the GeoDataFrame of a single polygon.
         '''
 
         # data file path
         data_file = os.path.join(
-            os.path.dirname(__file__), 'data', 'stream_lines.shp'
+            os.path.dirname(__file__), 'data', 'subbasin_Oulanka.shp'
+        )
+
+        # polygon GeoDataFrame
+        gdf = geopandas.read_file(data_file)
+
+        return gdf
+
+    @property
+    def geodataframe_lake(
+        self,
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Retrieves the GeoDataFrame of lake polygons.
+        '''
+
+        # data file path
+        data_file = os.path.join(
+            os.path.dirname(__file__), 'data', 'lake_from_subbasin_1.shp'
         )
 
         # polygon GeoDataFrame

@@ -8,7 +8,6 @@ class File:
     Functionality for file operations.
     '''
 
-    # pytest complete
     def delete_by_name(
         self,
         folder_path: str,
@@ -58,7 +57,6 @@ class File:
 
         return delete_files
 
-    # pytest complete
     def transfer_by_name(
         self,
         src_folder: str,
@@ -117,7 +115,6 @@ class File:
 
         return transfer_files
 
-    # pytest complete
     def name_change(
         self,
         folder_path: str,
@@ -170,7 +167,6 @@ class File:
 
         return output
 
-    # pytest complete
     def copy_rename_and_paste(
         self,
         src_folder: str,
@@ -226,7 +222,6 @@ class File:
 
         return paste_files
 
-    # pytest complete
     def extract_specific_extension(
         self,
         folder_path: str,

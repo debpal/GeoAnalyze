@@ -2,6 +2,8 @@ import string
 import fiona
 import pyogrio
 import rasterio
+import geopandas
+import shapely
 
 
 class Core:
@@ -65,7 +67,6 @@ class Core:
 
         return output
 
-    # pytest pending
     def shapefile_geometry_type(
         self,
         shape_file: str
@@ -90,7 +91,6 @@ class Core:
 
         return output
 
-    # pytest pending
     def _tmp_df_column_name(
         self,
         df_columns: list[str]
@@ -116,6 +116,23 @@ class Core:
         output = string.ascii_lowercase[:(max_length + 1)]
 
         return output
+
+    @property
+    def _geodataframe_point(
+        self,
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Returns a point GeoDataFrame.
+        '''
+
+        gdf = geopandas.GeoDataFrame(
+            data={'C1': [1]},
+            geometry=[shapely.Point(0, 0)],
+            crs='EPSG:4326'
+        )
+
+        return gdf
 
     @property
     def raster_resampling_method(

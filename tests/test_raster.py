@@ -36,16 +36,12 @@ def test_functions(
     with tempfile.TemporaryDirectory() as tmp_dir:
         # accessing DEM raster file
         dem_file = os.path.join(tmp_dir, 'dem.tif')
-        raster_profile = packagedata.get_dem(
+        raster_profile = packagedata.raster_dem(
             dem_file=dem_file
         )
         assert raster_profile['count'] == 1
-        # accessing polygon GeoDataFrame
-        polygon_gdf = packagedata.get_polygon_gdf
-        assert isinstance(polygon_gdf, geopandas.GeoDataFrame)
-        polygon_gdf.to_file(os.path.join(tmp_dir, 'polygon.shp'))
         # accessing stream GeoDataFrame
-        stream_gdf = packagedata.get_stream_gdf
+        stream_gdf = packagedata.geodataframe_stream
         assert isinstance(stream_gdf, geopandas.GeoDataFrame)
         stream_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
         # pass test for counting raster data cells
@@ -103,9 +99,12 @@ def test_functions(
         )
         assert output_profile['nodata'] == 0
         # pass test for raster clipping by shapes
+        subbasin_gdf = packagedata.geodataframe_subbasin
+        mask_gdf = subbasin_gdf[subbasin_gdf['flw_id'] == 6]
+        mask_gdf.to_file(os.path.join(tmp_dir, 'mask.shp'))
         output_profile = raster.clipping_by_shapes(
             input_file=os.path.join(tmp_dir, 'dem_32m.tif'),
-            shape_file=os.path.join(tmp_dir, 'polygon.shp'),
+            shape_file=os.path.join(tmp_dir, 'mask.shp'),
             output_file=os.path.join(tmp_dir, 'dem_32m_clipped.tif')
         )
         assert output_profile['width'] == 979
@@ -136,7 +135,7 @@ def test_error_raster_file_driver(
 
     # accessing DEM raster file
     with pytest.raises(Exception) as exc_info:
-        packagedata.get_dem(
+        packagedata.raster_dem(
             dem_file='dem.tifff',
         )
     assert exc_info.value.args[0] == message['error_driver']
@@ -205,7 +204,7 @@ def test_error_raster_file_driver(
     with pytest.raises(Exception) as exc_info:
         raster.clipping_by_shapes(
             input_file='dem.tif',
-            shape_file='polygon.shp',
+            shape_file='mask.shp',
             output_file='dem_clipped.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
