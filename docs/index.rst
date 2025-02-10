@@ -9,6 +9,8 @@ Welcome to GeoAnalyze's documentation!
    introduction
    installation
    quickstart
+   watershed
+   geoprocessing
    modules
    changelog
 

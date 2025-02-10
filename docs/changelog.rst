@@ -2,6 +2,21 @@
 Release Notes
 ===============
 
+Version 1.0.0
+---------------
+
+* **Release date:** 10-Feb-2025.
+
+* **Feature Additions:**
+
+    * Delineation functions implemented in the :class:`GeoAnalyze.Watershed` and :class:`GeoAnalyze.Stream` classes.
+    * Geoprocessing capabilities introduced in the :class:`GeoAnalyze.Raster` and :class:`GeoAnalyze.Shape` classes.
+
+* **Documentation:** Added a tutorial on how to use the newly introduced features.
+
+* **Development status:** Upgraded from Planning to Alpha.
+
+
 Version 0.0.3
 ---------------
 
