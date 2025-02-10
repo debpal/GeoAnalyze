@@ -15,7 +15,7 @@
 
 ## Delineation Functions
 
-The `GeoAnalyze.Watershed` and `GeoAnalyze.Stream` class provides fast and scalable watershed delineation functions by leveraging the computational efficiency of the PyPI package 
+The `GeoAnalyze.Watershed` and `GeoAnalyze.Stream` classes provide fast and scalable watershed delineation functions by leveraging the computational efficiency of the PyPI package 
 [pyflwdir](https://github.com/Deltares/pyflwdir), without requiring a detailed understanding of it. These functions can be executed either individually or simultaneously.
 
 * Basin area extraction from extended Digital Elevation Model (DEM).
