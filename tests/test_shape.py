@@ -46,13 +46,13 @@ def test_functions(
         lake_gdf = packagedata.geodataframe_lake
         lake_file = os.path.join(tmp_dir, 'lake.shp')
         lake_gdf.to_file(lake_file)
-        # pass test for non-decimal whole value float columns to integer columns
+        # non-decimal whole value float columns to integer columns
         int_gdf = shape.column_nondecimal_float_to_int_type(
             input_file=lake_file,
             output_file=os.path.join(tmp_dir, 'lake.shp')
         )
         assert 'int' in str(int_gdf.dtypes.iloc[-4])
-        # pass test for adding ID column
+        # adding ID column
         assert 'lid' not in lake_gdf.columns
         id_gdf = shape.column_add_for_id(
             input_file=lake_file,
@@ -60,7 +60,7 @@ def test_functions(
             output_file=lake_file
         )
         assert 'lid' in id_gdf.columns
-        # pass test for deleting columns
+        # deleting columns
         assert 'nimi' in lake_gdf.columns
         delete_gdf = shape.column_delete(
             input_file=lake_file,
@@ -68,21 +68,21 @@ def test_functions(
             output_file=lake_file
         )
         assert 'nimi' not in delete_gdf.columns
-        # pass test for retaining columns
+        # retaining columns
         retain_gdf = shape.column_retain(
             input_file=lake_file,
             retain_cols=['lid'],
             output_file=lake_file
         )
         assert list(retain_gdf.columns) == ['lid', 'geometry']
-        # pass test for Coordinate Reference System reprojection
+        # Coordinate Reference System reprojection
         reproject_gdf = shape.crs_reprojection(
             input_file=lake_file,
             target_crs='EPSG:4326',
             output_file=os.path.join(tmp_dir, 'crs_reproject.shp')
         )
         assert str(reproject_gdf.crs) == 'EPSG:4326'
-        # pass test for converting polygons to boundary lines
+        # converting polygons to boundary lines
         shape.polygons_to_boundary_lines(
             input_file=lake_file,
             output_file=os.path.join(tmp_dir, 'line.shp')
@@ -91,7 +91,7 @@ def test_functions(
             shape_file=os.path.join(tmp_dir, 'line.shp')
         )
         assert geometry_type == 'LineString'
-        # pass test for polygon filling
+        # polygon filling
         lake_hole = all(lake_gdf.geometry.apply(lambda x: len(list(x.interiors)) == 0))
         assert lake_hole is False
         lakeunion_gdf = geopandas.GeoDataFrame(
@@ -106,7 +106,7 @@ def test_functions(
         )
         lake_hole = all(lakefill_gdf.geometry.apply(lambda x: len(list(x.interiors)) == 0))
         assert lake_hole
-        # pass test for polygon filling after merging
+        # polygon filling after merging
         lake_hole = all(lake_gdf.geometry.apply(lambda x: len(list(x.interiors)) == 0))
         assert lake_hole is False
         lakefill_gdf = shape.polygon_fill_after_merge(
@@ -117,12 +117,12 @@ def test_functions(
         lake_hole = all(lakefill_gdf.geometry.apply(lambda x: len(list(x.interiors)) == 0))
         assert lake_hole
         assert len(lake_gdf) > len(lakefill_gdf)
-        # pass test for polygon count by cumulative sum percentages of areas
+        # polygon count by cumulative sum percentages of areas
         cumarea_count = shape.polygon_count_by_cumsum_area(
             shape_file=lake_file
         )
         assert len(cumarea_count) == 20
-        # pass test for removing polygons by cumulative area percentage cutoff
+        # removing polygons by cumulative area percentage cutoff
         lakecutoff_gdf = shape.polygons_remove_by_cumsum_area_percent(
             input_file=lake_file,
             percent_cutoff=90,
@@ -138,8 +138,8 @@ def test_functions(
             overlay_file=os.path.join(tmp_dir, 'stream.shp'),
             output_file=os.path.join(tmp_dir, 'lake_extracted.shp')
         )
-        assert len(extract_gdf) == 8
-        # pass test for aggregating geometries from shapefile
+        assert len(extract_gdf) == 6
+        # aggregating geometries from shapefile
         with tempfile.TemporaryDirectory() as tmp2_dir:
             lake1_gdf = lake_gdf.iloc[:50, :]
             lake1_gdf.to_file(os.path.join(tmp2_dir, 'lake_1.shp'))

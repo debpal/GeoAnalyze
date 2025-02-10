@@ -38,7 +38,7 @@ class PackageData:
 
         # data file path
         data_file = os.path.join(
-            os.path.dirname(__file__), 'data', 'DEM_Oulanka_Finland.tif'
+            os.path.dirname(__file__), 'data', 'dem_extended_Oulanka_Finland.tif'
         )
 
         # saving output raster
@@ -56,31 +56,12 @@ class PackageData:
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Retrieves the GeoDataFrame of stream network lines.
+        Retrieves the GeoDataFrame of stream lines.
         '''
 
         # data file path
         data_file = os.path.join(
             os.path.dirname(__file__), 'data', 'stream_Oulanka.shp'
-        )
-
-        # polygon GeoDataFrame
-        gdf = geopandas.read_file(data_file)
-
-        return gdf
-
-    @property
-    def geodataframe_subbasin(
-        self,
-    ) -> geopandas.GeoDataFrame:
-
-        '''
-        Retrieves the GeoDataFrame of a single polygon.
-        '''
-
-        # data file path
-        data_file = os.path.join(
-            os.path.dirname(__file__), 'data', 'subbasin_Oulanka.shp'
         )
 
         # polygon GeoDataFrame
@@ -99,7 +80,7 @@ class PackageData:
 
         # data file path
         data_file = os.path.join(
-            os.path.dirname(__file__), 'data', 'lake_from_subbasin_1.shp'
+            os.path.dirname(__file__), 'data', 'lake.shp'
         )
 
         # polygon GeoDataFrame

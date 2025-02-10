@@ -11,6 +11,12 @@ def packagedata():
 
 
 @pytest.fixture(scope='class')
+def raster():
+
+    yield GeoAnalyze.Raster()
+
+
+@pytest.fixture(scope='class')
 def watershed():
 
     yield GeoAnalyze.Watershed()
@@ -30,34 +36,80 @@ def message():
 
 def test_functions(
     packagedata,
+    raster,
     watershed,
     message
 ):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # saving DEM raster file
-        dem_file = os.path.join(tmp_dir, 'dem.tif')
-        packagedata.raster_dem(
-            dem_file=dem_file
+        # saving DEM raster file fo packaged data
+        output_profile = packagedata.raster_dem(
+            dem_file=os.path.join(tmp_dir, 'dem_extended.tif')
         )
-        ##############################################
-        # pass test of computing flow direction after pit filling of the DEM
-        output = watershed.flow_direction_after_filling_pits(
-            dem_file=dem_file,
+        assert output_profile['nodata'] is None
+        # raster Coordinate Reference System reprojectoion
+        output_profile = raster.crs_reprojection(
+            input_file=os.path.join(tmp_dir, 'dem_extended.tif'),
+            resampling_method='bilinear',
+            target_crs='EPSG:3067',
+            output_file=os.path.join(tmp_dir, 'dem_extended_EPSG3067.tif'),
+            nodata=-9999
+        )
+        assert output_profile['height'] == 3956
+        # raster resolution rescaling
+        output_profile = raster.resolution_rescaling(
+            input_file=os.path.join(tmp_dir, 'dem_extended_EPSG3067.tif'),
+            target_resolution=16,
+            resampling_method='bilinear',
+            output_file=os.path.join(tmp_dir, 'dem_extended_EPSG3067_16m.tif')
+        )
+        assert output_profile['height'] == 4093
+        # raster resolution rescaling with mask
+        output_profile = raster.resolution_rescaling_with_mask(
+            input_file=os.path.join(tmp_dir, 'dem_extended_EPSG3067_16m.tif'),
+            mask_file=os.path.join(tmp_dir, 'dem_extended_EPSG3067.tif'),
+            resampling_method='bilinear',
+            output_file=os.path.join(tmp_dir, 'dem_extended_rescale.tif')
+        )
+        assert output_profile['height'] == 3957
+        # dem extended area to basin
+        basin_gdf = watershed.dem_extended_area_to_basin(
+            input_file=os.path.join(tmp_dir, 'dem_extended_EPSG3067_16m.tif'),
+            basin_file=os.path.join(tmp_dir, 'basin.shp'),
+            output_file=os.path.join(tmp_dir, 'dem.tif')
+        )
+        assert int(basin_gdf['flwacc'].iloc[0]) == 8308974
+        # raster boundary polygon GeoDataFrame
+        boundary_df = raster.boundary_polygon(
+            raster_file=os.path.join(tmp_dir, 'dem.tif'),
+            shape_file=os.path.join(tmp_dir, 'dem_boundary.shp')
+        )
+        assert len(boundary_df) == 1
+        # dem delineation by single function
+        output = watershed.dem_delineation(
+            dem_file=os.path.join(tmp_dir, 'dem.tif'),
             outlet_type='single',
-            pitfill_file=os.path.join(tmp_dir, 'pitfill_dem.tif'),
+            tacc_type='percentage',
+            tacc_value=5,
+            folder_path=tmp_dir
+        )
+        assert output == 'All geoprocessing has been completed.'
+        # flow direction
+        output = watershed.get_flwdir(
+            dem_file=os.path.join(tmp_dir, 'dem.tif'),
+            outlet_type='single',
+            pitfill_file=os.path.join(tmp_dir, 'dem_pitfill.tif'),
             flwdir_file=os.path.join(tmp_dir, 'flwdir.tif')
         )
         assert isinstance(output, str)
-        # pass test of computing flow accumulation
-        output = watershed.flow_accumulation(
-            pitfill_file=os.path.join(tmp_dir, 'pitfill_dem.tif'),
+        # flow accumulation
+        output = watershed.get_flwacc(
             flwdir_file=os.path.join(tmp_dir, 'flwdir.tif'),
             flwacc_file=os.path.join(tmp_dir, 'flwacc.tif'),
         )
         assert isinstance(output, str)
-        # pass test of computing stream network and main outlets
-        output = watershed.stream_network_and_main_outlets(
+        # stream and main outlets
+        output = watershed.get_stream(
             flwdir_file=os.path.join(tmp_dir, 'flwdir.tif'),
             flwacc_file=os.path.join(tmp_dir, 'flwacc.tif'),
             tacc_type='percentage',
@@ -66,8 +118,8 @@ def test_functions(
             outlet_file=os.path.join(tmp_dir, 'outlet.shp')
         )
         assert isinstance(output, str)
-        # pass test of computing subbasins and their pour points
-        output = watershed.subbasin_and_pourpoints(
+        # subbasins and their pour points
+        output = watershed.get_subbasins(
             flwdir_file=os.path.join(tmp_dir, 'flwdir.tif'),
             stream_file=os.path.join(tmp_dir, 'stream.shp'),
             outlet_file=os.path.join(tmp_dir, 'outlet.shp'),
@@ -75,13 +127,13 @@ def test_functions(
             pour_file=os.path.join(tmp_dir, 'pour.shp')
         )
         assert isinstance(output, str)
-        # pass test of computing slope from DEM without pit filling
-        output = watershed.slope_from_dem_without_pit_filling(
-            dem_file=dem_file,
+        # slope
+        output = watershed.get_slope(
+            dem_file=os.path.join(tmp_dir, 'dem.tif'),
             slope_file=os.path.join(tmp_dir, 'slope.tif')
         )
         assert isinstance(output, str)
-        # pass test of slope reclassification
+        # slope reclassification
         output = watershed.slope_classification(
             slope_file=os.path.join(tmp_dir, 'slope.tif'),
             reclass_lb=[0, 2, 8, 20, 40],
@@ -89,34 +141,50 @@ def test_functions(
             reclass_file=os.path.join(tmp_dir, 'slope_reclass.tif')
         )
         assert isinstance(output, str)
-        # pass test of computing delineation files by single function
-        output = watershed.delineation_files_by_single_function(
-            dem_file=dem_file,
-            outlet_type='single',
-            tacc_type='percentage',
-            tacc_value=5,
-            folder_path=tmp_dir
+        # raster unique values
+        count_df = raster.counting_unique_values(
+            raster_file=os.path.join(tmp_dir, 'slope_reclass.tif'),
+            csv_file=os.path.join(tmp_dir, 'slope_reclass.csv'),
         )
-        assert output == 'All geoprocessing has been completed.'
-        ##############################################
-        # error test of input list lengths for slope reclassification
-        with pytest.raises(Exception) as exc_info:
-            watershed.slope_classification(
-                slope_file=os.path.join(tmp_dir, 'slope.tif'),
-                reclass_lb=[0, 2, 8, 20, 40],
-                reclass_values=[2, 8, 20, 40],
-                reclass_file=os.path.join(tmp_dir, 'slope_reclass.tif')
-            )
-        assert exc_info.value.args[0] == 'Both input lists must have the same length.'
+        assert len(count_df) == 5
+        # accessing stream GeoDataFrame
+        stream_gdf = packagedata.geodataframe_stream
+        stream_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
+        assert len(stream_gdf) == 11
+        # raster array from geometries
+        raster.array_from_geometries(
+            shape_file=os.path.join(tmp_dir, 'stream.shp'),
+            value_column='flw_id',
+            mask_file=os.path.join(tmp_dir, 'dem.tif'),
+            nodata=-9999,
+            dtype='int32',
+            output_file=os.path.join(tmp_dir, 'stream.tif')
+        )
+        assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'stream.tif')) == 12454
+        # raster NoData conversion from value
+        raster.nodata_conversion_from_value(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            target_value=[1, 9],
+            output_file=os.path.join(tmp_dir, 'stream_NoData.tif')
+        )
+        assert raster.count_nodata_cells(raster_file=os.path.join(tmp_dir, 'stream_NoData.tif')) == 13921390
+        # raster NoData value change
+        output_profile = raster.nodata_value_change(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            nodata=0,
+            output_file=os.path.join(tmp_dir, 'stream_nodata_0.tif'),
+            dtype='float32'
+        )
+        assert output_profile['nodata'] == 0
 
 
 def test_error_invalid_folder_path(
     watershed
 ):
 
-    # delineation files by single function
+    # dem delineation
     with pytest.raises(Exception) as exc_info:
-        watershed.delineation_files_by_single_function(
+        watershed.dem_delineation(
             dem_file='dem.tif',
             outlet_type='single',
             tacc_type='percentage',
@@ -132,26 +200,40 @@ def test_error_invalid_file_path(
 ):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # computing flow direction pit filling of the DEM
+        # dem extended area to basin
         with pytest.raises(Exception) as exc_info:
-            watershed.flow_direction_after_filling_pits(
+            watershed.dem_extended_area_to_basin(
+                input_file=os.path.join(tmp_dir, 'dem_extended.tif'),
+                basin_file=os.path.join(tmp_dir, 'basin.sh'),
+                output_file=os.path.join(tmp_dir, 'dem.tif')
+            )
+        assert exc_info.value.args[0] == message['error_driver']
+        with pytest.raises(Exception) as exc_info:
+            watershed.dem_extended_area_to_basin(
+                input_file=os.path.join(tmp_dir, 'dem_extended.tif'),
+                basin_file=os.path.join(tmp_dir, 'basin.shp'),
+                output_file=os.path.join(tmp_dir, 'dem.tifff')
+            )
+        assert exc_info.value.args[0] == message['error_driver']
+        # flow direction
+        with pytest.raises(Exception) as exc_info:
+            watershed.get_flwdir(
                 dem_file=os.path.join(tmp_dir, 'dem.tif'),
-                outlet_type='singleee',
-                pitfill_file=os.path.join(tmp_dir, 'pitfill_dem.tif'),
+                outlet_type='single',
+                pitfill_file=os.path.join(tmp_dir, 'dem_pitfill.tif'),
                 flwdir_file=os.path.join(tmp_dir, 'flwdir.tifff')
             )
         assert exc_info.value.args[0] == message['error_driver']
-        # error test of invalid file path for computing flow accumulation
+        # flow accumulation
         with pytest.raises(Exception) as exc_info:
-            watershed.flow_accumulation(
-                pitfill_file=os.path.join(tmp_dir, 'pitfill_dem.tif'),
+            watershed.get_flwacc(
                 flwdir_file=os.path.join(tmp_dir, 'flwdir.tif'),
-                flwacc_file=os.path.join(tmp_dir, 'flwacc.tifff'),
+                flwacc_file=os.path.join(tmp_dir, 'flwacc.tifff')
             )
         assert exc_info.value.args[0] == message['error_driver']
-        # error test of invalid file path for computing stream network and main outlets
+        # stream and main outlets
         with pytest.raises(Exception) as exc_info:
-            watershed.stream_network_and_main_outlets(
+            watershed.get_stream(
                 flwdir_file=os.path.join(tmp_dir, 'flwdir.tif'),
                 flwacc_file=os.path.join(tmp_dir, 'flwacc.tif'),
                 tacc_type='percentage',
@@ -160,9 +242,9 @@ def test_error_invalid_file_path(
                 outlet_file=os.path.join(tmp_dir, 'outlet.shp')
             )
         assert exc_info.value.args[0] == message['error_driver']
-        # error test of invalid file path for computing subbasins and their pour points
+        # subbasins and their pour points
         with pytest.raises(Exception) as exc_info:
-            watershed.subbasin_and_pourpoints(
+            watershed.get_subbasins(
                 flwdir_file=os.path.join(tmp_dir, 'flwdir.tif'),
                 stream_file=os.path.join(tmp_dir, 'stream.shp'),
                 outlet_file=os.path.join(tmp_dir, 'outlet.shp'),
@@ -170,14 +252,14 @@ def test_error_invalid_file_path(
                 pour_file=os.path.join(tmp_dir, 'pour.shp')
             )
         assert exc_info.value.args[0] == message['error_driver']
-        # error test of invalid file path for computing slope from DEM without pit filling
+        # slope
         with pytest.raises(Exception) as exc_info:
-            watershed.slope_from_dem_without_pit_filling(
+            watershed.get_slope(
                 dem_file=os.path.join(tmp_dir, 'dem.tif'),
                 slope_file=os.path.join(tmp_dir, 'slope.tifff')
             )
         assert exc_info.value.args[0] == message['error_driver']
-        # error test of invalid file path for slope reclassification
+        # slope reclassification
         with pytest.raises(Exception) as exc_info:
             watershed.slope_classification(
                 slope_file=os.path.join(tmp_dir, 'slope.tif'),
@@ -194,23 +276,23 @@ def test_error_type_outlet(
 ):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # computing flow direction and pit filling of the DEM
+        # dem delineation
         with pytest.raises(Exception) as exc_info:
-            watershed.flow_direction_after_filling_pits(
-                dem_file=os.path.join(tmp_dir, 'dem.tif'),
-                outlet_type='singleee',
-                pitfill_file=os.path.join(tmp_dir, 'pitfill_dem.tif'),
-                flwdir_file=os.path.join(tmp_dir, 'flwdir.tif')
-            )
-        assert exc_info.value.args[0] == message['type_outlet']
-        # delineation files by single function
-        with pytest.raises(Exception) as exc_info:
-            watershed.delineation_files_by_single_function(
+            watershed.dem_delineation(
                 dem_file=os.path.join(tmp_dir, 'dem.tif'),
                 outlet_type='singleee',
                 tacc_type='percentage',
                 tacc_value=5,
                 folder_path=tmp_dir
+            )
+        assert exc_info.value.args[0] == message['type_outlet']
+        # flow direction after pit filling of DEM
+        with pytest.raises(Exception) as exc_info:
+            watershed.get_flwdir(
+                dem_file=os.path.join(tmp_dir, 'dem.tif'),
+                outlet_type='singleee',
+                pitfill_file=os.path.join(tmp_dir, 'dem_pitfill.tif'),
+                flwdir_file=os.path.join(tmp_dir, 'flwdir.tif')
             )
         assert exc_info.value.args[0] == message['type_outlet']
 
@@ -221,9 +303,19 @@ def test_error_type_flwacc(
 ):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # stream network and main outlets
+        # dem delineation
         with pytest.raises(Exception) as exc_info:
-            watershed.stream_network_and_main_outlets(
+            watershed.dem_delineation(
+                dem_file=os.path.join(tmp_dir, 'dem.tif'),
+                outlet_type='single',
+                tacc_type='percentagee',
+                tacc_value=5,
+                folder_path=tmp_dir
+            )
+        assert exc_info.value.args[0] == message['type_flwacc']
+        # stream and main outlets
+        with pytest.raises(Exception) as exc_info:
+            watershed.get_stream(
                 flwdir_file=os.path.join(tmp_dir, 'flwdir.tif'),
                 flwacc_file=os.path.join(tmp_dir, 'flwacc.tif'),
                 tacc_type='percentagee',
@@ -232,23 +324,13 @@ def test_error_type_flwacc(
                 outlet_file=os.path.join(tmp_dir, 'outlet.shp')
             )
         assert exc_info.value.args[0] == message['type_flwacc']
-        # delineation files by single function
-        with pytest.raises(Exception) as exc_info:
-            watershed.delineation_files_by_single_function(
-                dem_file=os.path.join(tmp_dir, 'dem.tif'),
-                outlet_type='single',
-                tacc_type='percentagee',
-                tacc_value=5,
-                folder_path=tmp_dir
-            )
-        assert exc_info.value.args[0] == message['type_flwacc']
 
 
-def test_error_list_length(
+def test_error_list_length_slope(
     watershed
 ):
 
-    # input list lengths for slope reclassification
+    # slope reclassification
     with pytest.raises(Exception) as exc_info:
         watershed.slope_classification(
             slope_file='slope.tif',

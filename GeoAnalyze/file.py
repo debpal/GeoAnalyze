@@ -129,7 +129,7 @@ class File:
         folder_path : str
             Path of the folder containing the files to rename.
 
-        new_names : dict
+        rename_map : dict
             Dictionary mapping old file names (without extension) to new file names.
 
         Returns

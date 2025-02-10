@@ -46,47 +46,47 @@ def test_functions(
         stream_file = os.path.join(tmp_dir, 'stream.shp')
         stream_gdf = packagedata.geodataframe_stream
         stream_gdf.to_file(stream_file)
-        # pass test of checking flow path direction from upstream to downstream
+        # checking flow path direction from upstream to downstream
         check_flwpath = stream.is_flw_path_us_to_ds(
             stream_file=stream_file
         )
         assert check_flwpath
-        # pass test of reversing flow path direction
+        # reversing flow path direction
         stream.flw_path_reverse(
             input_file=stream_file,
             output_file=os.path.join(tmp_dir, 'stream_reverse.shp')
         )
         assert stream.is_flw_path_us_to_ds(os.path.join(tmp_dir, 'stream_reverse.shp')) is False
-        # pass test of connected downstream segement identifiers
+        # connected downstream segement identifiers
         cds_gdf = stream.connectivity_to_downstream_segment(
             input_file=stream_file,
             stream_col='flw_id',
             output_file=os.path.join(tmp_dir, 'stream_ds_id.shp')
         )
         assert cds_gdf['ds_id'].iloc[0] == 4
-        assert cds_gdf['ds_id'].iloc[-2] == 9
-        # pass test of junction points
+        assert cds_gdf['ds_id'].iloc[-2] == 11
+        # junction points
         junction_gdf = stream.point_junctions(
             input_file=stream_file,
             stream_col='flw_id',
             output_file=os.path.join(tmp_dir, 'junction_points.shp')
         )
         assert junction_gdf['flw_id'].iloc[0] == [1, 3]
-        assert junction_gdf['flw_id'].iloc[-1] == [6, 8]
-        # pass test of segment's subbasin drainage points
+        assert junction_gdf['flw_id'].iloc[-1] == [9, 10]
+        # segment's subbasin drainage points
         drainage_gdf = stream.point_segment_subbasin_drainage(
             input_file=stream_file,
             output_file=os.path.join(tmp_dir, 'subbasin_drainage_points.shp')
         )
         assert stream_gdf['geometry'].iloc[0].coords[-2] == drainage_gdf['geometry'].iloc[0].coords[0]
         assert stream_gdf['geometry'].iloc[-1].coords[-1] == drainage_gdf['geometry'].iloc[-1].coords[0]
-        # pass test of main outlet points
+        # main outlet points
         outlet_gdf = stream.point_main_outlets(
             input_file=stream_file,
             output_file=os.path.join(tmp_dir, 'main_outlet_points.shp')
         )
         assert stream_gdf['geometry'].iloc[-1].coords[-1] == outlet_gdf['geometry'].iloc[-1].coords[0]
-        # pass test of box touching the selected segment in a stream path
+        # ox touching the selected segment in a stream path
         selected_line = stream_gdf[stream_gdf['flw_id'] == 3]['geometry'].iloc[0]
         box_gdf = stream.box_touch_selected_segment(
             input_file=stream_file,
@@ -97,7 +97,7 @@ def test_functions(
         )
         polygon = box_gdf.geometry.iloc[0]
         assert selected_line.touches(polygon)
-        # pass test of box touching the selected segment at endpoint in a stream path
+        # box touching the selected segment at endpoint in a stream path
         box_gdf = stream.box_touch_selected_segment_at_endpoint(
             input_file=stream_file,
             column_name='flw_id',
@@ -107,7 +107,7 @@ def test_functions(
         )
         polygon = box_gdf.geometry.iloc[0]
         assert selected_line.touches(polygon)
-        # pass test of box crossing the selected segment at endpoint in a stream path
+        # box crossing the selected segment at endpoint in a stream path
         box_gdf = stream.box_cross_selected_segment_at_endpoint(
             input_file=stream_file,
             column_name='flw_id',

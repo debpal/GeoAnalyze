@@ -153,7 +153,8 @@ class Raster:
             boundary_shapes = rasterio.features.shapes(
                 source=raster_array,
                 mask=mask,
-                transform=input_raster.transform
+                transform=input_raster.transform,
+                connectivity=8
             )
             boundary_features = [
                 {'geometry': geom, 'properties': {'value': val}} for geom, val in boundary_shapes
@@ -162,7 +163,6 @@ class Raster:
                 features=boundary_features,
                 crs=input_raster.crs
             )
-            gdf = gdf[gdf.is_valid].reset_index(drop=True)
             gdf['bid'] = range(1, gdf.shape[0] + 1)
             gdf = gdf[['bid', 'geometry']]
             gdf.to_file(shape_file)
@@ -282,9 +282,8 @@ class Raster:
 
         Returns
         -------
-        list
-            A nested list representation of the 3x3 affine transformation matrix
-            of the reprojected raster array. Each sublist represents a row of the matrix.
+        profile
+            A profile containing metadata about the output raster.
         '''
 
         # check validity of output file path
@@ -349,7 +348,8 @@ class Raster:
         input_file: str,
         resampling_method: str,
         target_crs: str,
-        output_file: str
+        output_file: str,
+        nodata: typing.Optional[int] = None
     ) -> rasterio.profiles.Profile:
 
         '''
@@ -369,6 +369,10 @@ class Raster:
 
         output_file : str
             Path to save the reprojected raster file.
+
+        nodata : int, optional
+            The NoData value to assign in the output raster.
+            If None, the NoData value of the input raster is retained.
 
         Returns
         -------
@@ -405,12 +409,14 @@ class Raster:
                 top=input_raster.bounds.top
             )
             # output raster profile
+            nodata = raster_profile['nodata'] if nodata is None else nodata
             raster_profile.update(
                 {
                     'transform': output_transform,
                     'width': output_width,
                     'height': output_height,
-                    'crs': target_crs
+                    'crs': target_crs,
+                    'nodata': nodata
                 }
             )
             # saving output raster
@@ -422,6 +428,7 @@ class Raster:
                     src_crs=input_raster.crs,
                     dst_transform=output_transform,
                     dst_crs=target_crs,
+                    dst_nodata=nodata,
                     resampling=resampling_dict[resampling_method]
                 )
                 output_profile = output_raster.profile
@@ -433,7 +440,7 @@ class Raster:
         input_file: str,
         target_value: list[float],
         output_file: str,
-        nodata: typing.Optional[float] = None
+        nodata: typing.Optional[int] = None
     ) -> rasterio.profiles.Profile:
 
         '''
@@ -447,11 +454,12 @@ class Raster:
         target_value : list
             List of values in the input raster array to convert to nodata.
 
-        nodata : float
-            The NoData value to assign in the output raster.
-
         output_file : str
             Path to save the output raster file.
+
+        nodata : int, optional
+            The NoData value to assign in the output raster.
+            If None, the NoData value of the input raster is retained.
 
         Returns
         -------
@@ -540,7 +548,6 @@ class Raster:
 
         return raster_profile
 
-    # pytest pending
     def clipping_by_shapes(
         self,
         input_file: str,

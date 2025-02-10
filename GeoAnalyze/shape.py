@@ -433,7 +433,7 @@ class Shape:
 
         Parameters
         ----------
-        input_file : str
+        shape_file : str
             Path to the input shapefile.
 
         Returns
