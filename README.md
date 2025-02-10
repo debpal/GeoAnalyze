@@ -9,51 +9,68 @@
 | **PePy** | ![Pepy Total Downloads](https://img.shields.io/pepy/dt/GeoAnalyze) |
 | **License** | ![GitHub License](https://img.shields.io/github/license/debpal/GeoAnalyze) |
 
-`GeoAnalyze` is a Python package designed to streamline geoprocessing by handling internal complexities and intermediate steps. Conceptualized and launched on October 10, 2024, this package is tailored for users with limited geospatial processing experience, allowing them to focus on desired outputs. The package is still in the planning stage, but active development is ongoing, with exciting new features planned for future releases.
-Leveraging open-source geospatial Python modules, GeoAnalyze aims to empower users by providing high-level geoprocessing tools with fewer lines of code.
 
+`GeoAnalyze` is a Python package designed to streamline geoprocessing by handling internal complexities and intermediate steps. Conceptualized and launched on October 10, 2024, this package is tailored for users with limited geospatial processing experience, allowing them to focus on desired outputs. Leveraging open-source geospatial Python modules, GeoAnalyze aims to empower users by providing high-level geoprocessing tools with fewer lines of code. This fast package is also useful for the users who has no access of paid GIS software packages.
+
+
+## Delineation Functions
+
+The `GeoAnalyze.Watershed` and `GeoAnalyze.Stream` class provides fast and scalable watershed delineation functions by leveraging the computational efficiency of the PyPI package 
+[pyflwdir](https://github.com/Deltares/pyflwdir), without requiring a detailed understanding of it. These functions can be executed either individually or simultaneously.
+
+* Basin area extraction from extended Digital Elevation Model (DEM).
+* Pit filling of DEM.
+* Slope.
+* Flow direction.
+* Flow accumulation.
+* Stream extraction.
+* Subbaisn generation.
+* Stream link.
+* Main outlet and junction points.
+
+The computational efficiency of these functions is demonstrated in the following output figure.
+All delineation files—including basin area, flow direction, flow accumulation, slope, stream, outlets, and subbasins—can be generated within 30 seconds from a raster containing 14 million cells.
+
+![All delineation files from DEM](https://github.com/debpal/GeoAnalyze/raw/main/docs/_static/dem_all_delineation.png)
+
+ 
+Geoprocessing
+--------------------
+
+The `GeoAnalyze` package leverages the existing PyPI packages, such as, [rasterio](https://github.com/rasterio/rasterio),
+[geopandas](https://github.com/geopandas/geopandas), and [shapely](https://github.com/shapely/shapely),
+to perform geoprocessing efficiently while reducing implementation complexity.
+Instead of requiring multiple lines of code to handle intermediate steps,
+the `GeoAnalyze.Raster` and `GeoAnalyze.Shape` classes streamline the process by automating these operations.
+This allows users to execute geoprocessing tasks more efficiently, reducing code length while ensuring accuracy and scalability.
+
+
+* Counting raster values and NoData cells
+* Changing raster resolution
+* Reprojecting the raster's Coordinate Reference System (CRS)
+* Clipping raster using shapefiles
+* Generating rasters from input geometries
+* Handling NoData values in rasters
+* Extracting raster boundary polygons
+* Performing column analysis on shapefiles
+* Reprojecting the CRS of shapefiles
+* Filling polygons
+* Executing spatial joins on geometries
+* Merging shapefiles
 
 ## File Operations (Irrespective of Extensions)
 
-When managing GIS files, each main file is often associated with several auxiliary files. For example, a `.shp` file (shapefile) is commonly accompanied by `.cpg`, `.dbf`, `.prj`, and `.shx` files, which are necessary for the shapefile to function correctly. In geospatial processing, these associated files must be handled together to prevent errors or data loss. GeoAnalyze simplifies this process by ensuring that any operation performed on a main file automatically includes its associated auxiliary files, making file management seamless and error-free. The package offers the following file operation features:
+When managing GIS files, each main file is often associated with several auxiliary files. For example, a shapefile
+is commonly accompanied by `.shp`, `.cpg`, `.dbf`, `.prj`, and `.shx` files, which are necessary for the shapefile to function correctly.
+In geoprocessing, these associated files must be handled together to prevent errors or data loss.
+The `GeoAnalyze.File` class simplifies this process by ensuring that any operation performed
+on a main file automatically includes its auxiliary files, making file management more efficient and error-free.
 
 * Deleting files in a folder.
 * Transferring files from the source folder to the destination folder.
 * Renaming files in a folder.
 * Copying files from the source folder and renames them in the destination folder.
 * Extracting files with the same extension from a folder.
-
- 
-## Raster processing
-
-* Counting of raster cells.
-* Changing raster solutions.
-* Reprojecting Coordinate Reference System of raster.
-* Clipping raster by shapes.
-* Raster from input geometries.
-* Raster NoData processing
-
-## Shapefile analysis
-
-* Column analysis.
-* Adding shape ID.
-* Reprojecting Coordinate Reference System of shapefile.
-* Polygon filling.
-* Spatial join of geometries.
-* Merging shapefiles.
-
-## Watershed delineation
-
-The following watershed delineation functions have been implemented using the PyPI package [pyflwdir](https://pypi.org/project/pyflwdir/). Users can calculate these features with just a few lines of code, without requiring a detailed understanding of the `pyflwdir` package.
-
-* Pit filling of Digital Elevation Model (DEM).
-* DEM slope prediction.
-* Flow direction.
-* Flow accumulation.
-* Stream extraction.
-* Subbaisn creation.
-
-
 
 ## Easy Installation
 
