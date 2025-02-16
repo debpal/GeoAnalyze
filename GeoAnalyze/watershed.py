@@ -174,9 +174,12 @@ class Watershed:
         '''
         Generates delineation raster outputs, including flow direction (`flwdir.tif`), slope (`slope.tif`),
         and flow accumulation (`flwacc.tif`). Using the provided flow accumulation threshold, the function also generates shapefiles
-        for streams (`stream_lines.shp`), subbasins (`subbasins.shp`), pour points (`subbasin_pour_points.shp`), and main outlets
+        for streams (`stream_lines.shp`), subbasins (`subbasins.shp`), subbasin drainage points (`subbasin_drainage_points.shp`), and main outlets
         (`outlet_points.shp`). All shapefiles share a common identifier column, `flw_id`, for easy cross-referencing.
+
         The `subbasins.shp` file contains an additional column, `area_m2`, which stores the area of each subbasin.
+        The `subbasin_drainage_points.shp` file contains an additional column, `flwacc`, which stores the flow accumulation value at the drainage points.
+
         A summary file is created detailing the processing time and other relevant parameters. All outputs are saved to the specified folder.
 
         Parameters
@@ -233,6 +236,7 @@ class Watershed:
         # DEM and mask array
         start_time = time.time()
         with rasterio.open(dem_file) as input_dem:
+            dem_shape = input_dem.shape
             cell_area = input_dem.res[0] * input_dem.res[1]
             dem_profile = input_dem.profile
             dem_profile.update(
@@ -304,9 +308,6 @@ class Watershed:
             data=mask_array
         )
         flwacc_array[mask_array == 0] = dem_profile['nodata']
-        dem_profile.update(
-            {'dtype': 'float32'}
-        )
         flwacc_file = os.path.join(folder_path, 'flwacc.tif')
         with rasterio.open(flwacc_file, 'w', **dem_profile) as output_flwacc:
             output_flwacc.write(flwacc_array, 1)
@@ -334,6 +335,7 @@ class Watershed:
             features=flwacc_features,
             crs=dem_profile['crs']
         )
+
         # flow line GeoDataFrame
         flw_col = 'flw_id'
         flw_gdf = feature_gdf[feature_gdf['pit'] == 0].reset_index(drop=True)
@@ -349,6 +351,7 @@ class Watershed:
         )
         summary['Stream calculation time (seconds)'] = required_time
         summary['Number of stream segments'] = flw_gdf.shape[0]
+
         # outlet point GeoDataFrame
         outlet_gdf = feature_gdf[feature_gdf['pit'] == 1].reset_index(drop=True)
         outlet_gdf['outlet_id'] = range(1, outlet_gdf.shape[0] + 1)
@@ -358,7 +361,7 @@ class Watershed:
         )
         summary['Number of outlets'] = outlet_gdf.shape[0]
 
-        # Subbaisn pour point GeoDataFrame
+        # subbaisn pour point GeoDataFrame
         start_time = time.time()
         pour_gdf = flw_gdf.copy()
         pour_gdf['pour_coords'] = pour_gdf.geometry.apply(
@@ -371,9 +374,23 @@ class Watershed:
         pour_gdf = pour_gdf.drop(
             columns=['pour_coords']
         )
+        pour_array = rasterio.features.rasterize(
+            shapes=zip(pour_gdf.geometry, pour_gdf['flw_id']),
+            out_shape=dem_shape,
+            transform=dem_profile['transform'],
+            all_touched=True,
+            fill=dem_profile['nodata'],
+            dtype=dem_profile['dtype']
+        )
+        pour_flwacc = {}
+        for pid in pour_gdf['flw_id']:
+            pid_flwacc = flwacc_array[pour_array == pid]
+            pour_flwacc[pid] = pid_flwacc[0]
+        pour_gdf['flwacc'] = pour_gdf['flw_id'].apply(lambda x: pour_flwacc.get(x))
         pour_gdf.to_file(
             filename=os.path.join(folder_path, 'subbasin_drainage_points.shp')
         )
+
         # subbasins polygon GeoDataFrame
         subbasin_array = flwdir_object.basins(
             xy=(pour_gdf.geometry.x, pour_gdf.geometry.y),
