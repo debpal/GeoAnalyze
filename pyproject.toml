@@ -32,9 +32,11 @@ classifiers = [
 ]
 dynamic = ["version"]
 keywords = [
-	"Raster",
-    "Shapefile",
-	"Geoprocessing"
+    "Watershed",
+    "Delineation",
+	"Geoprocessing",
+    "raster",
+    "shapefile"
 ]
 
 
