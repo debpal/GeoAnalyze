@@ -298,6 +298,26 @@ class Watershed:
         )
         summary['Slope calculation time (seconds)'] = required_time
 
+        # aspect array and saving raster
+        start_time = time.time()
+        grad_y, grad_x = numpy.gradient(
+            dem_array,
+            input_dem.res[1],
+            input_dem.res[0],
+        )
+        aspect_array = numpy.arctan2(-grad_y, grad_x) * (180 / numpy.pi)
+        aspect_array[aspect_array < 0] += 360
+        aspect_array[dem_array == dem_profile['nodata']] = dem_profile['nodata']
+        aspect_file = os.path.join(folder_path, 'aspect.tif')
+        with rasterio.open(aspect_file, 'w', **dem_profile) as output_aspect:
+            output_aspect.write(aspect_array, 1)
+        required_time = round(time.time() - start_time, 2)
+        print(
+            f'Aspect calculation time (seconds): {required_time}',
+            flush=True
+        )
+        summary['Aspect calculation time (seconds)'] = required_time
+
         # flow accumulation array and saving raster
         start_time = time.time()
         flwdir_object = pyflwdir.from_array(
@@ -827,7 +847,7 @@ class Watershed:
         else:
             pass
 
-        # raster profile
+        # slope raster
         with rasterio.open(dem_file) as input_dem:
             raster_profile = input_dem.profile
             slope_array = pyflwdir.dem.slope(
@@ -846,6 +866,69 @@ class Watershed:
         # required time
         required_time = time.time() - start_time
         output = f'Time required for computing slope: {required_time:.2f} seconds.'
+
+        return output
+
+    def get_aspect(
+        self,
+        dem_file: str,
+        aspect_file: str
+    ) -> str:
+
+        '''
+        Computes the terrain aspect from a DEM without applying pit filling.
+
+        Parameters
+        ----------
+        dem_file : str
+            Path to the input DEM raster file (e.g., GeoTIFF).
+
+        aspect_file : str
+            Path to save the output aspect raster file.
+
+        Returns
+        -------
+        str
+            A message indicating the time required for all geoprocessing computations.
+        '''
+
+        # start time
+        start_time = time.time()
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(aspect_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+        else:
+            pass
+
+        # aspect raster
+        with rasterio.open(dem_file) as input_dem:
+            dem_profile = input_dem.profile
+            dem_array = input_dem.read(1)
+            grad_y, grad_x = numpy.gradient(
+                dem_array,
+                input_dem.res[1],
+                input_dem.res[0],
+            )
+            # angles
+            aspect_array = numpy.arctan2(-grad_y, grad_x) * (180 / numpy.pi)
+            # negative angles to compass direction
+            aspect_array[aspect_array < 0] += 360
+            aspect_array[dem_array == dem_profile['nodata']] = dem_profile['nodata']
+            # update raster profile
+            dem_profile.update(
+                {
+                    'dtype': 'float32'
+                }
+            )
+            # saving the raster
+            with rasterio.open(aspect_file, 'w', **dem_profile) as output_aspect:
+                output_aspect.write(aspect_array, 1)
+
+        # required time
+        required_time = time.time() - start_time
+        output = f'Time required for computing aspect: {required_time:.2f} seconds.'
 
         return output
 

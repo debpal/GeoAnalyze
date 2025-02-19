@@ -64,7 +64,7 @@ class Raster:
 
         return output
 
-    def counting_unique_values(
+    def count_unique_values(
         self,
         raster_file: str,
         csv_file: str,

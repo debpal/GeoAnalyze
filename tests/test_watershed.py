@@ -133,6 +133,12 @@ def test_functions(
             slope_file=os.path.join(tmp_dir, 'slope.tif')
         )
         assert isinstance(output, str)
+        # aspect
+        output = watershed.get_aspect(
+            dem_file=os.path.join(tmp_dir, 'dem.tif'),
+            aspect_file=os.path.join(tmp_dir, 'aspect.tif')
+        )
+        assert isinstance(output, str)
         # slope reclassification
         output = watershed.slope_classification(
             slope_file=os.path.join(tmp_dir, 'slope.tif'),
@@ -142,7 +148,7 @@ def test_functions(
         )
         assert isinstance(output, str)
         # raster unique values
-        count_df = raster.counting_unique_values(
+        count_df = raster.count_unique_values(
             raster_file=os.path.join(tmp_dir, 'slope_reclass.tif'),
             csv_file=os.path.join(tmp_dir, 'slope_reclass.csv'),
         )
@@ -257,6 +263,13 @@ def test_error_invalid_file_path(
             watershed.get_slope(
                 dem_file=os.path.join(tmp_dir, 'dem.tif'),
                 slope_file=os.path.join(tmp_dir, 'slope.tifff')
+            )
+        assert exc_info.value.args[0] == message['error_driver']
+        # aspect
+        with pytest.raises(Exception) as exc_info:
+            watershed.get_aspect(
+                dem_file=os.path.join(tmp_dir, 'dem.tif'),
+                aspect_file=os.path.join(tmp_dir, 'aspect.tifff')
             )
         assert exc_info.value.args[0] == message['error_driver']
         # slope reclassification
