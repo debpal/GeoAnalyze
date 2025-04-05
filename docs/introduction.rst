@@ -44,18 +44,29 @@ the :class:`GeoAnalyze.Raster` and :class:`GeoAnalyze.Shape` classes streamline 
 This allows users to execute geoprocessing tasks more efficiently, reducing code length while ensuring accuracy and scalability.
 
 
-* Counting raster values and NoData cells
-* Changing raster resolution
-* Reprojecting the raster's Coordinate Reference System (CRS)
-* Clipping raster using shapefiles
-* Generating rasters from input geometries
-* Handling NoData values in rasters
-* Extracting raster boundary polygons
-* Performing column analysis on shapefiles
-* Reprojecting the CRS of shapefiles
-* Filling polygons
-* Executing spatial joins on geometries
-* Merging shapefiles
+*Raster*
+^^^^^^^^^^^
+
+- Rasterizing input geometries
+- Rescaling raster resolution
+- Clipping rasters using shapefiles
+- Overlaying geometries onto rasters
+- Reprojecting the Coordinate Reference System (CRS) 
+- Handling NoData values in rasters  
+- Extracting raster boundary polygons
+- Reclassifying rasters values
+- Counting unique raster values
+- Merging raster files
+
+*Shapefile*
+^^^^^^^^^^^^^^^
+
+- Vectorizing raster array
+- Aggregating geometries
+- Executing spatial joins on geometries
+- Reprojecting CRS
+- Filling polygons
+- Performing column analysis
 
 
 File Operations (Irrespective of Extensions)

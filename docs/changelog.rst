@@ -2,6 +2,19 @@
 Release Notes
 ===============
 
+
+Version 1.1.0
+---------------
+
+* **Release date:** 05-Apr-2025.
+
+* **Feature Additions:** New functions introduced in the :class:`GeoAnalyze.Raster` class.
+
+* **Documentation:** Added a tutorial on how to use the newly introduced features.
+
+* **Development status:** Upgraded from Alpha to Beta.
+
+
 Version 1.0.0
 ---------------
 
