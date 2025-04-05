@@ -18,7 +18,7 @@ dependencies = [
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
-	"Development Status :: 3 - Alpha",
+	"Development Status :: 4 - Beta",
 	"Programming Language :: Python :: 3.10",
 	"Programming Language :: Python :: 3.11",
 	"Programming Language :: Python :: 3.12",
@@ -35,8 +35,8 @@ keywords = [
     "Watershed",
     "Delineation",
 	"Geoprocessing",
-    "raster",
-    "shapefile"
+    "Raster",
+    "Shapefile"
 ]
 
 
