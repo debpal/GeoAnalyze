@@ -43,25 +43,29 @@ Instead of requiring multiple lines of code to handle intermediate steps,
 the `GeoAnalyze.Raster` and `GeoAnalyze.Shape` classes streamline the process by automating these operations.
 This allows users to execute geoprocessing tasks more efficiently, reducing code length while ensuring accuracy and scalability.
 
-### Raster
-
-- Counting raster values and NoData cells  
-- Changing raster resolution  
-- Reprojecting the raster's Coordinate Reference System (CRS)  
-- Clipping rasters using shapefiles  
-- Generating rasters from input geometries  
+### *Raster*
+  
+- Rasterizing input geometries
+- Rescaling raster resolution
+- Clipping rasters using shapefiles
+- Overlaying geometries onto rasters
+- Reprojecting the Coordinate Reference System (CRS) 
 - Handling NoData values in rasters  
 - Extracting raster boundary polygons
-- Reclassification of rasters
+- Reclassifying rasters values
+- Counting unique raster values
 - Merging raster files
 
-### Shapefile
 
-- Performing column analysis on shapefiles  
-- Reprojecting the CRS of shapefiles  
-- Filling polygons  
-- Executing spatial joins on geometries  
-- Merging shapefiles 
+### *Shapefile*
+
+- Vectorizing raster array
+- Aggregating geometries
+- Executing spatial joins on geometries
+- Reprojecting CRS
+- Filling polygons
+- Performing column analysis 
+
 
 ## File Operations (Irrespective of Extensions)
 
