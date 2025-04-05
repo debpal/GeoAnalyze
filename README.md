@@ -34,8 +34,7 @@ All delineation files—including basin area, flow direction, flow accumulation,
 ![All delineation files from DEM](https://github.com/debpal/GeoAnalyze/raw/main/docs/_static/dem_all_delineation.png)
 
  
-Geoprocessing
---------------------
+## Geoprocessing
 
 The `GeoAnalyze` package leverages the existing PyPI packages, such as, [rasterio](https://github.com/rasterio/rasterio),
 [geopandas](https://github.com/geopandas/geopandas), and [shapely](https://github.com/shapely/shapely),
@@ -44,19 +43,25 @@ Instead of requiring multiple lines of code to handle intermediate steps,
 the `GeoAnalyze.Raster` and `GeoAnalyze.Shape` classes streamline the process by automating these operations.
 This allows users to execute geoprocessing tasks more efficiently, reducing code length while ensuring accuracy and scalability.
 
+### Raster
 
-* Counting raster values and NoData cells
-* Changing raster resolution
-* Reprojecting the raster's Coordinate Reference System (CRS)
-* Clipping raster using shapefiles
-* Generating rasters from input geometries
-* Handling NoData values in rasters
-* Extracting raster boundary polygons
-* Performing column analysis on shapefiles
-* Reprojecting the CRS of shapefiles
-* Filling polygons
-* Executing spatial joins on geometries
-* Merging shapefiles
+- Counting raster values and NoData cells  
+- Changing raster resolution  
+- Reprojecting the raster's Coordinate Reference System (CRS)  
+- Clipping rasters using shapefiles  
+- Generating rasters from input geometries  
+- Handling NoData values in rasters  
+- Extracting raster boundary polygons
+- Reclassification of rasters
+- Merging raster files
+
+### Shapefile
+
+- Performing column analysis on shapefiles  
+- Reprojecting the CRS of shapefiles  
+- Filling polygons  
+- Executing spatial joins on geometries  
+- Merging shapefiles 
 
 ## File Operations (Irrespective of Extensions)
 
