@@ -172,7 +172,7 @@ class Watershed:
     ) -> str:
 
         '''
-        Generates delineation raster outputs, including flow direction (`flwdir.tif`), slope (`slope.tif`),
+        Generates delineation raster outputs, including flow direction (`flwdir.tif`), slope (`slope.tif`), aspect (`aspect.tif`),
         and flow accumulation (`flwacc.tif`). Using the provided flow accumulation threshold, the function also generates shapefiles
         for streams (`stream_lines.shp`), subbasins (`subbasins.shp`), subbasin drainage points (`subbasin_drainage_points.shp`), and main outlets
         (`outlet_points.shp`). All shapefiles share a common identifier column, `flw_id`, for easy cross-referencing.

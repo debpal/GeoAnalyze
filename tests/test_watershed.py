@@ -73,18 +73,18 @@ def test_functions(
         )
         assert output_profile['height'] == 3957
         # dem extended area to basin
-        basin_gdf = watershed.dem_extended_area_to_basin(
+        output_gdf = watershed.dem_extended_area_to_basin(
             input_file=os.path.join(tmp_dir, 'dem_extended_EPSG3067_16m.tif'),
             basin_file=os.path.join(tmp_dir, 'basin.shp'),
             output_file=os.path.join(tmp_dir, 'dem.tif')
         )
-        assert int(basin_gdf['flwacc'].iloc[0]) == 8308974
+        assert int(output_gdf['flwacc'].iloc[0]) == 8308974
         # raster boundary polygon GeoDataFrame
-        boundary_df = raster.boundary_polygon(
+        output_gdf = raster.boundary_polygon(
             raster_file=os.path.join(tmp_dir, 'dem.tif'),
             shape_file=os.path.join(tmp_dir, 'dem_boundary.shp')
         )
-        assert len(boundary_df) == 1
+        assert len(output_gdf) == 1
         # dem delineation by single function
         output = watershed.dem_delineation(
             dem_file=os.path.join(tmp_dir, 'dem.tif'),
@@ -154,19 +154,52 @@ def test_functions(
         )
         assert len(count_df) == 5
         # accessing stream GeoDataFrame
-        stream_gdf = packagedata.geodataframe_stream
-        stream_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
-        assert len(stream_gdf) == 11
+        output_gdf = packagedata.geodataframe_stream
+        output_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
+        assert len(output_gdf) == 11
         # raster array from geometries
         raster.array_from_geometries(
             shape_file=os.path.join(tmp_dir, 'stream.shp'),
             value_column='flw_id',
             mask_file=os.path.join(tmp_dir, 'dem.tif'),
+            output_file=os.path.join(tmp_dir, 'stream.tif'),
             nodata=-9999,
             dtype='int32',
-            output_file=os.path.join(tmp_dir, 'stream.tif')
         )
         assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'stream.tif')) == 12454
+        # raster reclassification by value mapping
+        output_list = raster.reclassify_by_value_mapping(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            reclass_map={(3, 4): 1},
+            output_file=os.path.join(tmp_dir, 'stream_reclass.tif')
+        )
+        assert 3 not in output_list
+        assert 4 not in output_list
+        # raster reclassification by constant value
+        output_list = raster.reclassify_by_constant_value(
+            input_file=os.path.join(tmp_dir, 'dem.tif'),
+            constant_value=60,
+            output_file=os.path.join(tmp_dir, 'dem_reclass.tif')
+        )
+        assert 60 in output_list
+        assert 100 not in output_list
+        # raster overlaid with geometries
+        output_list = raster.overlaid_with_geometries(
+            input_file=os.path.join(tmp_dir, 'dem_reclass.tif'),
+            shape_file=os.path.join(tmp_dir, 'stream_lines.shp'),
+            value_column='flw_id',
+            output_file=os.path.join(tmp_dir, 'pasting_stream_in_dem_reclass.tif')
+        )
+        assert 1 in output_list
+        assert 5 in output_list
+        assert 6 in output_list
+        # raster array to geometries
+        output_gdf = raster.array_to_geometries(
+            raster_file=os.path.join(tmp_dir, 'stream.tif'),
+            select_value=[5, 6],
+            shape_file=os.path.join(tmp_dir, 'stream_polygon.shp')
+        )
+        len(output_gdf) == 2
         # raster NoData conversion from value
         raster.nodata_conversion_from_value(
             input_file=os.path.join(tmp_dir, 'stream.tif'),
@@ -182,6 +215,56 @@ def test_functions(
             dtype='float32'
         )
         assert output_profile['nodata'] == 0
+        # raster file merging
+        with tempfile.TemporaryDirectory() as tmp1_dir:
+            # shape of subbasin 8 to raster
+            raster.array_from_geometries(
+                shape_file=os.path.join(tmp_dir, 'subbasins.shp'),
+                value_column='flw_id',
+                mask_file=os.path.join(tmp_dir, 'dem.tif'),
+                output_file=os.path.join(tmp_dir, tmp1_dir, 'subbasin_8.tif'),
+                select_value=[8]
+            )
+            assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, tmp1_dir, 'subbasin_8.tif')) == 214006
+            # shape of subbasin 10 to raster
+            raster.array_from_geometries(
+                shape_file=os.path.join(tmp_dir, 'subbasins.shp'),
+                value_column='flw_id',
+                mask_file=os.path.join(tmp_dir, 'dem.tif'),
+                output_file=os.path.join(tmp_dir, tmp1_dir, 'subbasin_10.tif'),
+                select_value=[10]
+            )
+            assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, tmp1_dir, 'subbasin_10.tif')) == 305596
+            # merging files
+            raster.merging_files(
+                folder_path=os.path.join(tmp_dir, tmp1_dir),
+                raster_file=os.path.join(tmp_dir, 'subbasin_merge.tif')
+            )
+            assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'subbasin_merge.tif')) == 519602
+        # raster NoData extent trimming
+        output_profile = raster.nodata_extent_trimming(
+            input_file=os.path.join(tmp_dir, 'subbasin_merge.tif'),
+            output_file=os.path.join(tmp_dir, 'subbasin_merge_remove_nodata.tif')
+        )
+        assert output_profile['width'] == 1173
+        assert output_profile['height'] == 844
+        # raster value reclassification outside boundary area
+        raster.array_from_geometries(
+            shape_file=os.path.join(tmp_dir, 'subbasins.shp'),
+            value_column='flw_id',
+            mask_file=os.path.join(tmp_dir, 'dem.tif'),
+            output_file=os.path.join(tmp_dir, 'subbasins.tif')
+        )
+        output_list = raster.reclassify_value_outside_boundary(
+            input_file=os.path.join(tmp_dir, 'subbasins.tif'),
+            area_file=os.path.join(tmp_dir, 'subbasin_merge.tif'),
+            outside_value=6,
+            output_file=os.path.join(tmp_dir, 'subbasins_outside_area_0.tif')
+        )
+        assert len(output_list) == 3
+        assert 6 in output_list
+        assert 8 in output_list
+        assert 5 not in output_list
 
 
 def test_error_invalid_folder_path(

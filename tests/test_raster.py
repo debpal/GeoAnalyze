@@ -71,12 +71,35 @@ def test_error_raster_file_driver(
             output_file='dem_EPSG4326.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # raster NoData conversion from value
+    with pytest.raises(Exception) as exc_info:
+        raster.nodata_conversion_from_value(
+            input_file='stream.tif',
+            target_value=[1, 9],
+            output_file='stream_NoData.tifff',
+        )
+    assert exc_info.value.args[0] == message['error_driver']
     # raster NoData value change
     with pytest.raises(Exception) as exc_info:
         raster.nodata_value_change(
             input_file='dem.tif',
             nodata=0,
             output_file='dem_NoData_0.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # raster NoData extent trimming
+    with pytest.raises(Exception) as exc_info:
+        raster.nodata_extent_trimming(
+            input_file='subbasin_merge.tif',
+            output_file='subbasin_merge_remove_nodata.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # raster clipping by shapes
+    with pytest.raises(Exception) as exc_info:
+        raster.clipping_by_shapes(
+            input_file='dem.tif',
+            shape_file='mask.shp',
+            output_file='dem_clipped.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
     # raster array from geometries
@@ -90,20 +113,53 @@ def test_error_raster_file_driver(
             output_file='stream.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster NoData conversion from value
+    # raster overlaid with geometries
     with pytest.raises(Exception) as exc_info:
-        raster.nodata_conversion_from_value(
-            input_file='stream.tif',
-            target_value=[1, 9],
-            output_file='stream_NoData.tifff',
+        raster.overlaid_with_geometries(
+            input_file='dem_reclass.tif',
+            shape_file='stream_lines.shp',
+            value_column='flw_id',
+            output_file='pasting_stream_in_dem_reclass.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster clipping by shapes
+    # raster reclassification by value mapping
     with pytest.raises(Exception) as exc_info:
-        raster.clipping_by_shapes(
+        raster.reclassify_by_value_mapping(
+            input_file='stream.tif',
+            reclass_map={(3, 4): 1},
+            output_file='stream_reclass.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # raster reclassification by constant value
+    with pytest.raises(Exception) as exc_info:
+        raster.reclassify_by_constant_value(
             input_file='dem.tif',
-            shape_file='mask.shp',
-            output_file='dem_clipped.tifff'
+            constant_value=60,
+            output_file='dem_reclass.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # raster reclassification outside boundary area
+    with pytest.raises(Exception) as exc_info:
+        raster.reclassify_value_outside_boundary(
+            input_file='subbasins.tif',
+            area_file='subbasin_merge.tif',
+            outside_value=6,
+            output_file='subbasins_outside_area_0.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # raster array to geometries
+    with pytest.raises(Exception) as exc_info:
+        raster.array_to_geometries(
+            raster_file='stream.tif',
+            select_value=[5, 6],
+            shape_file='stream_polygon.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # raster files merging
+    with pytest.raises(Exception) as exc_info:
+        raster.merging_files(
+            folder_path='folder_path',
+            raster_file='subbasin_merge.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
 
