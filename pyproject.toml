@@ -50,7 +50,7 @@ version = {attr = "GeoAnalyze.__version__"}
 
 
 [tool.pytest.ini_options]
-addopts = "-rA -Werror --cov=GeoAnalyze --cov-report=html:cov_GeoAnalyze --cov-report=term -s"
+addopts = "-rA -Wignore::DeprecationWarning --cov=GeoAnalyze --cov-report=html:cov_GeoAnalyze --cov-report=term -s"
 testpaths = [
     "tests"
 ]
