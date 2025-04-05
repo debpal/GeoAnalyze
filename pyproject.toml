@@ -12,6 +12,7 @@ authors = [
 dependencies = [
     "geopandas",
     "rasterio",
+    "shapely",
     "fiona",
     "pyflwdir"
 ]
