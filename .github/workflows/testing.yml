@@ -36,7 +36,7 @@ jobs:
     - name: Run tests with pytest
       run: |
         export PYTHONPATH=$(pwd)
-        pytest --cov=GeoAnalyze --cov-report=xml  # Run tests and generate coverage report in XML format
+        pytest -rA -Wignore::DeprecationWarning --cov=GeoAnalyze --cov-report=xml  # Run tests and generate coverage report in XML format
 
     - name: Upload coverage to Codecov  # Upload coverage report to Codecov
       uses: codecov/codecov-action@v4.2.0
