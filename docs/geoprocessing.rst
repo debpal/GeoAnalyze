@@ -110,8 +110,8 @@ To reproject rasters and shapefiles to a different Coordinate Reference System (
     )
     
 
-Trimming NoData Values in a Raster
---------------------------------------
+Trimming a Raster
+--------------------
 
 To trim rows and columns that contain only NoData values, use the following code:
 
@@ -124,9 +124,25 @@ To trim rows and columns that contain only NoData values, use the following code
         output_file=r"C:\users\username\folder\dem_nodata_trim.tif"
     )
     
+    
+Extending a Raster
+--------------------
 
-Extracting Raster Boundaries
--------------------------------
+To extend a raster to match the spatial extent of a mask raster, use the following code:
+
+
+.. code-block:: python
+
+    # extending raster to the extend of the mask raster
+    raster.extension_to_mask_with_fill_value(
+        input_file=r"C:\users\username\folder\input.tif",
+        mask_file=r"C:\users\username\folder\mask.tif",
+        fill_value=1,
+        output_file=r"C:\users\username\folder\input_extended.tif"
+    )
+
+Extracting Boundaries of a Raster
+-----------------------------------
 
 To extract the boundary polygons of a raster, use the following code:
 
