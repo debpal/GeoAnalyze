@@ -55,6 +55,7 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
 - Reclassifying rasters values
 - Counting unique raster values
 - Merging raster files
+- Trimming and extending rasters
 
 
 ### *Shapefile*
