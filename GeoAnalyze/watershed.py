@@ -75,6 +75,7 @@ class Watershed:
         with rasterio.open(input_file) as input_dem:
             dem_profile = input_dem.profile
             dem_array = input_dem.read(1).astype('float32')
+            dem_res = input_dem.res
             pitfill_array, flwdir_array = pyflwdir.dem.fill_depressions(
                 elevtn=dem_array,
                 outlets='edge',
@@ -138,11 +139,16 @@ class Watershed:
             features=basin_feature,
             crs=dem_profile['crs']
         )
-        basin_gdf['flwacc'] = point_gdf['flwacc'].iloc[0]
+        flwacc_value = point_gdf['flwacc'].iloc[0]
+        basin_gdf['flwacc'] = flwacc_value
         basin_gdf.to_file(basin_file)
         required_time = round(time.time() - start_time, 2)
         print(
             f'Basin calculation time (seconds): {required_time}',
+            flush=True
+        )
+        print(
+            f'Basin area: {flwacc_value * dem_res[0] * dem_res[1]}',
             flush=True
         )
 

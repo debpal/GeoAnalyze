@@ -286,7 +286,8 @@ class Raster:
             Path to the input raster file.
 
         mask_file : str
-            Path to the mask raster file, defining the spatial extent and resolution.
+            Path to the mask raster file containing any type of values,
+            defining the spatial extent and resolution of the output raster.
 
         resampling_method : str
             Raster resampling method with supported options from
@@ -674,12 +675,16 @@ class Raster:
         mask_file: str,
         output_file: str,
         select_value: typing.Optional[list[float]] = None,
+        all_touched: bool = True,
+        fill_mask: typing.Optional[float] = None,
         dtype: typing.Optional[str] = None,
         nodata: typing.Optional[int] = None
     ) -> rasterio.profiles.Profile:
 
         '''
-        Converts geometries from a shapefile to a raster array.
+        Converts geometries corresponding to specified values
+        in a shapefile column into a raster array. If no specific value
+        is provided, all values in the column will be used.
 
         Parameters
         ----------
@@ -691,7 +696,8 @@ class Raster:
             to be inserted into the raster array.
 
         mask_file : str
-            Path to the mask raster file, defining the spatial extent and resolution.
+            Path to the mask raster file containing any type of values,
+            defining the spatial extent and resolution of the output raster.
 
         output_file : str
             Path to save the output raster file.
@@ -699,6 +705,15 @@ class Raster:
         select_value : list of float, optional
             A list of specific values from the selected column to include.
             If None, all values from the selected column are used.
+
+        all_touched : bool, optional
+            If True, all pixels touched by geometries will be considered;
+            otherwise, only pixels whose center is within the geometries will be considered.
+            Default is True.
+
+        fill_mask : float, optional
+            Optional value to assign to NoData pixels not covered
+            by the geometries within the mask region.
 
         dtype : str, optional
             Data type of the output raster.
@@ -725,23 +740,31 @@ class Raster:
         gdf = geopandas.read_file(shape_file)
         gdf = gdf if select_value is None else gdf[gdf[value_column].isin(select_value)].reset_index(drop=True)
 
-        # saving output raster
+        # array from geometries
         with rasterio.open(mask_file) as mask_raster:
             mask_profile = mask_raster.profile
+            mask_array = mask_raster.read(1) != mask_profile['nodata']
             mask_profile['dtype'] = mask_profile['dtype'] if dtype is None else dtype
             mask_profile['nodata'] = mask_profile['nodata'] if nodata is None else nodata
             output_array = rasterio.features.rasterize(
                 shapes=zip(gdf.geometry, gdf[value_column]),
                 out_shape=mask_raster.shape,
                 transform=mask_raster.transform,
-                all_touched=True,
+                all_touched=all_touched,
                 fill=mask_profile['nodata'],
                 dtype=mask_profile['dtype']
             )
+            # replace empty region by given value
+            if fill_mask is None:
+                pass
+            else:
+                output_array[mask_array & (output_array == mask_profile['nodata'])] = fill_mask
+            # saving output raster
             with rasterio.open(output_file, mode='w', **mask_profile) as output_raster:
                 output_raster.write(output_array, 1)
+                output_profile = output_raster.profile
 
-        return mask_profile
+        return output_profile
 
     def overlaid_with_geometries(
         self,
@@ -749,13 +772,16 @@ class Raster:
         shape_file: str,
         value_column: str,
         output_file: str,
-        all_pixels: bool = True,
+        select_value: typing.Optional[list[float]] = None,
+        all_touched: bool = True,
         dtype: typing.Optional[str] = None,
         nodata: typing.Optional[int] = None
     ) -> list[float]:
 
         '''
-        Overlays geometries from a shapefile onto the input raster.
+        Overlays geometries corresponding to specified values
+        in a shapefile column onto the input raster. If no specific value
+        is provided, all values in the column will be used.
 
         Parameters
         ----------
@@ -772,7 +798,11 @@ class Raster:
         output_file : str
             Path to save the output raster file.
 
-        all_pixels : bool, optional
+        select_value : list of float, optional
+            A list of specific values from the selected column to include.
+            If None, all values from the selected column are used.
+
+        all_touched : bool, optional
             If True, all pixels touched by geometries will be considered;
             otherwise, only pixels whose center is within the geometries will be considered.
             Default is True.
@@ -801,6 +831,7 @@ class Raster:
 
         # input GeoDataFrame
         gdf = geopandas.read_file(shape_file)
+        gdf = gdf if select_value is None else gdf[gdf[value_column].isin(select_value)].reset_index(drop=True)
         paste_value = gdf[value_column].unique().tolist()
 
         # pasting geometries to input raster
@@ -814,7 +845,7 @@ class Raster:
                 shapes=zip(gdf.geometry, gdf[value_column]),
                 out_shape=input_raster.shape,
                 transform=raster_profile['transform'],
-                all_touched=all_pixels,
+                all_touched=all_touched,
                 fill=raster_profile['nodata'],
                 dtype=raster_profile['dtype']
             )
@@ -953,7 +984,8 @@ class Raster:
         '''
         Reclassifies values outside a specified area in the input raster,
         based on the corresponding area raster. Both rasters must share the same
-        cell alignment, coordinate reference system (CRS), and pixel resolution.
+        cell alignment, coordinate reference system (CRS), and pixel resolution;
+        otherwise, the result may be incorrect.
 
         Parameters
         ----------
@@ -961,7 +993,7 @@ class Raster:
             Path to the input raster file.
 
         area_file : str
-            Path to the area raster file.
+            Path to the area raster file containing any type of values.
 
         outside_value : float
             The value to assign to cells outside the specified area.
@@ -1148,8 +1180,102 @@ class Raster:
         # saving the merged raster
         with rasterio.open(raster_file, 'w', **raster_profile) as output_raster:
             output_raster.write(output_array)
+            output_profile = output_raster.profile
         # close the split rasters
         for raster in split_rasters:
             raster.close()
 
-        return raster_profile
+        return output_profile
+
+    def extension_to_mask_with_fill_value(
+        self,
+        input_file: str,
+        mask_file: str,
+        fill_value: float,
+        output_file: str,
+        dtype: typing.Optional[str] = None,
+        nodata: typing.Optional[float] = None
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Extends the input raster array to match the spatial extent of the mask raster,
+        using a specified fill value for the area between the input and mask raster extents.
+        The area covered by the mask raster must fully contain the input raster. Both rasters
+        must share the same cell alignment, coordinate reference system (CRS),
+        and pixel resolution; otherwise, the result may be incorrect.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        mask_file : str
+            Path to the mask raster file containing any type of values,
+            defining the spatial extent and resolution of the output raster.
+
+        fill_value : float
+            The value to assign to cells outside the extent
+            of the input raster but within the extent of the mask raster.
+
+        output_file : str
+            Path to save the output raster file.
+
+        dtype : str, optional
+            Data type of the output raster.
+            If None, the data type of the input raster is retained.
+
+        nodata : int, optional
+            NoData value to assign in the output raster.
+            If None, the NoData value of the input raster is retained.
+
+        Returns
+        -------
+        profile
+            A metadata profile containing information about the output raster.
+        '''
+
+        # check output file
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is True:
+            pass
+        else:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # read input raster
+        with rasterio.open(input_file) as input_raster:
+            raster_profile = input_raster.profile
+            raster_array = input_raster.read(1)
+            raster_shape = input_raster.shape
+            raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
+            # read mask raster
+            with rasterio.open(mask_file) as mask_raster:
+                mask_profile = mask_raster.profile
+                mask_array = mask_raster.read(1) != mask_profile['nodata']
+                # extended array filled by input value
+                output_array = numpy.full(
+                    shape=mask_raster.shape,
+                    fill_value=raster_profile['nodata'],
+                    dtype=raster_profile['dtype']
+                )
+                row_offset = (mask_raster.bounds.top - input_raster.bounds.top) / mask_raster.res[1]
+                col_offset = (input_raster.bounds.left - mask_raster.bounds.left) / mask_raster.res[0]
+                row_offset, col_offset = int(row_offset), int(col_offset)
+                output_array[
+                    row_offset:row_offset + raster_shape[0],
+                    col_offset:col_offset + raster_shape[1]
+                ] = raster_array
+                output_array[mask_array & (output_array == raster_profile['nodata'])] = fill_value
+                raster_profile['nodata'] = raster_profile['nodata'] if nodata is None else nodata
+                output_array[~mask_array] = raster_profile['nodata']
+                raster_profile.update(
+                    {
+                        'height': mask_profile['height'],
+                        'width': mask_profile['width'],
+                        'transform': mask_profile['transform']
+                    }
+                )
+                with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
+                    output_raster.write(output_array, 1)
+                    output_profile = output_raster.profile
+
+        return output_profile

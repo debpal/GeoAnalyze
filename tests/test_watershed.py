@@ -157,7 +157,7 @@ def test_functions(
         output_gdf = packagedata.geodataframe_stream
         output_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
         assert len(output_gdf) == 11
-        # raster array from geometries
+        # raster array from geometries without filling mask region
         raster.array_from_geometries(
             shape_file=os.path.join(tmp_dir, 'stream.shp'),
             value_column='flw_id',
@@ -167,6 +167,21 @@ def test_functions(
             dtype='int32',
         )
         assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'stream.tif')) == 12454
+        raster.array_from_geometries(
+            shape_file=os.path.join(tmp_dir, 'stream.shp'),
+            value_column='flw_id',
+            mask_file=os.path.join(tmp_dir, 'dem.tif'),
+            output_file=os.path.join(tmp_dir, 'stream_1234.tif'),
+            select_value=[1, 2, 3, 4],
+            fill_mask=0,
+            dtype='int16'
+        )
+        output_gdf = raster.count_unique_values(
+            raster_file=os.path.join(tmp_dir, 'stream_1234.tif'),
+            csv_file=os.path.join(tmp_dir, 'stream_1234.csv'),
+            remove_values=(0,)
+        )
+        assert output_gdf['Count'].sum() == 7436
         # raster reclassification by value mapping
         output_list = raster.reclassify_by_value_mapping(
             input_file=os.path.join(tmp_dir, 'stream.tif'),
@@ -259,12 +274,20 @@ def test_functions(
             input_file=os.path.join(tmp_dir, 'subbasins.tif'),
             area_file=os.path.join(tmp_dir, 'subbasin_merge.tif'),
             outside_value=6,
-            output_file=os.path.join(tmp_dir, 'subbasins_outside_area_0.tif')
+            output_file=os.path.join(tmp_dir, 'subbasins_outside_area_6.tif')
         )
         assert len(output_list) == 3
         assert 6 in output_list
         assert 8 in output_list
         assert 5 not in output_list
+        # raster extension to mask area
+        raster.extension_to_mask_with_fill_value(
+            input_file=os.path.join(tmp_dir, 'subbasin_merge.tif'),
+            mask_file=os.path.join(tmp_dir, 'dem.tif'),
+            fill_value=1,
+            output_file=os.path.join(tmp_dir, 'subbasin_merge_extended.tif')
+        )
+        assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'subbasin_merge_extended.tif')) == 8308974
 
 
 def test_error_invalid_folder_path(

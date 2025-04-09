@@ -162,6 +162,15 @@ def test_error_raster_file_driver(
             raster_file='subbasin_merge.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # raster extension to mask area
+    with pytest.raises(Exception) as exc_info:
+        raster.extension_to_mask_with_fill_value(
+            input_file='subbasin_merge.tif',
+            mask_file='dem.tif',
+            fill_value=1,
+            output_file='subbasin_merge_extended.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
 
 
 def test_error_resampling_method(
