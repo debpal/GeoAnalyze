@@ -151,7 +151,7 @@ def test_error_raster_file_driver(
     with pytest.raises(Exception) as exc_info:
         raster.array_to_geometries(
             raster_file='stream.tif',
-            select_value=[5, 6],
+            select_values=[5, 6],
             shape_file='stream_polygon.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
@@ -169,6 +169,14 @@ def test_error_raster_file_driver(
             mask_file='dem.tif',
             fill_value=1,
             output_file='subbasin_merge_extended.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # raster value extraction by mask
+    with pytest.raises(Exception) as exc_info:
+        raster.extract_value_by_mask(
+            input_file='flwdir.tif',
+            mask_file='stream.tif',
+            output_file='flwdir_extract.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
 

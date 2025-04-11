@@ -172,7 +172,7 @@ def test_functions(
             value_column='flw_id',
             mask_file=os.path.join(tmp_dir, 'dem.tif'),
             output_file=os.path.join(tmp_dir, 'stream_1234.tif'),
-            select_value=[1, 2, 3, 4],
+            select_values=[1, 2, 3, 4],
             fill_mask=0,
             dtype='int16'
         )
@@ -211,7 +211,7 @@ def test_functions(
         # raster array to geometries
         output_gdf = raster.array_to_geometries(
             raster_file=os.path.join(tmp_dir, 'stream.tif'),
-            select_value=[5, 6],
+            select_values=[5, 6],
             shape_file=os.path.join(tmp_dir, 'stream_polygon.shp')
         )
         len(output_gdf) == 2
@@ -238,7 +238,7 @@ def test_functions(
                 value_column='flw_id',
                 mask_file=os.path.join(tmp_dir, 'dem.tif'),
                 output_file=os.path.join(tmp_dir, tmp1_dir, 'subbasin_8.tif'),
-                select_value=[8]
+                select_values=[8]
             )
             assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, tmp1_dir, 'subbasin_8.tif')) == 214006
             # shape of subbasin 10 to raster
@@ -247,7 +247,7 @@ def test_functions(
                 value_column='flw_id',
                 mask_file=os.path.join(tmp_dir, 'dem.tif'),
                 output_file=os.path.join(tmp_dir, tmp1_dir, 'subbasin_10.tif'),
-                select_value=[10]
+                select_values=[10]
             )
             assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, tmp1_dir, 'subbasin_10.tif')) == 305596
             # merging files
@@ -288,6 +288,14 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'subbasin_merge_extended.tif')
         )
         assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'subbasin_merge_extended.tif')) == 8308974
+        # raster value extraction by mask
+        output_list = raster.extract_value_by_mask(
+            input_file=os.path.join(tmp_dir, 'flwdir.tif'),
+            mask_file=os.path.join(tmp_dir, 'stream.tif'),
+            output_file=os.path.join(tmp_dir, 'flwdir_extract.tif'),
+            fill_value=0
+        )
+        assert all([i in output_list for i in [0, 1, 2, 4, 8, 16, 32, 64, 128]])
 
 
 def test_error_invalid_folder_path(

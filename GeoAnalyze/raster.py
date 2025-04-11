@@ -72,7 +72,7 @@ class Raster:
         raster_file: str,
         csv_file: str,
         multiplier: float = 1,
-        remove_values: tuple[int, ...] = (),
+        remove_values: tuple[float, ...] = (),
         ascending_values: bool = True
     ) -> pandas.DataFrame:
 
@@ -95,7 +95,7 @@ class Raster:
             Default is 1, which implies no scaling.
 
         remove_values : tuple, optional
-            A tuple of integer values to exclude from counting. These values must match
+            A tuple of float values to exclude from counting. These values must match
             the result of multiplying raster values by the multiplier. Default is an empty tuple.
 
         ascending_values : bool, optional
@@ -155,9 +155,7 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(shape_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # saving raster boundary GeoDataFrame
@@ -218,16 +216,12 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check resampling method
         resampling_dict = Core().raster_resampling_method
-        if resampling_method in resampling_dict.keys():
-            pass
-        else:
+        if resampling_method not in resampling_dict.keys():
             raise Exception(f'Input resampling method must be one of {list(resampling_dict.keys())}.')
 
         # rescaling resolution
@@ -304,16 +298,12 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check resampling method
         resampling_dict = Core().raster_resampling_method
-        if resampling_method in resampling_dict.keys():
-            pass
-        else:
+        if resampling_method not in resampling_dict.keys():
             raise Exception(f'Input resampling method must be one of {list(resampling_dict.keys())}.')
 
         # rescaling resolution
@@ -365,7 +355,7 @@ class Raster:
         resampling_method: str,
         target_crs: str,
         output_file: str,
-        nodata: typing.Optional[int] = None
+        nodata: typing.Optional[float] = None
     ) -> rasterio.profiles.Profile:
 
         '''
@@ -386,7 +376,7 @@ class Raster:
         output_file : str
             Path to save the reprojected raster file.
 
-        nodata : int, optional
+        nodata : float, optional
             NoData value to assign in the output raster.
             If None, the NoData value of the input raster is retained.
 
@@ -398,16 +388,12 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check resampling method
         resampling_dict = Core().raster_resampling_method
-        if resampling_method in resampling_dict.keys():
-            pass
-        else:
+        if resampling_method not in resampling_dict.keys():
             raise Exception(f'Input resampling method must be one of {list(resampling_dict.keys())}.')
 
         # reproject Coordinate Reference System
@@ -467,7 +453,7 @@ class Raster:
             Path to the input raster file.
 
         target_value : list
-            List of values in the input raster array to convert to nodata.
+            List of float values in the input raster array to convert to nodata.
 
         output_file : str
             Path to save the output raster file.
@@ -480,9 +466,7 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # saving raster after converting raster value to NoData
@@ -503,7 +487,7 @@ class Raster:
     def nodata_value_change(
         self,
         input_file: str,
-        nodata: int,
+        nodata: float,
         output_file: str,
         dtype: typing.Optional[str] = None
     ) -> rasterio.profiles.Profile:
@@ -516,7 +500,7 @@ class Raster:
         input_file : str
             Path to the input raster file.
 
-        nodata : int
+        nodata : float
             New NoData value to be assigned to the output raster.
 
         output_file : str
@@ -534,9 +518,7 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # saving raster after changing NoData value
@@ -577,9 +559,7 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # trimming NoData rows and columns
@@ -639,9 +619,7 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # saving clipped raster
@@ -674,15 +652,15 @@ class Raster:
         value_column: str,
         mask_file: str,
         output_file: str,
-        select_value: typing.Optional[list[float]] = None,
+        select_values: typing.Optional[list[float]] = None,
         all_touched: bool = True,
         fill_mask: typing.Optional[float] = None,
         dtype: typing.Optional[str] = None,
-        nodata: typing.Optional[int] = None
+        nodata: typing.Optional[float] = None
     ) -> rasterio.profiles.Profile:
 
         '''
-        Converts geometries corresponding to specified values
+        Converts geometries corresponding to specified float values
         in a shapefile column into a raster array. If no specific value
         is provided, all values in the column will be used.
 
@@ -702,8 +680,8 @@ class Raster:
         output_file : str
             Path to save the output raster file.
 
-        select_value : list of float, optional
-            A list of specific values from the selected column to include.
+        select_values : list, optional
+            A list of specific float values from the selected column to include.
             If None, all values from the selected column are used.
 
         all_touched : bool, optional
@@ -719,7 +697,7 @@ class Raster:
             Data type of the output raster.
             If None, the data type of the input raster is retained.
 
-        nodata : int, optional
+        nodata : float, optional
             NoData value to assign in the output raster.
             If None, the NoData value of the input raster is retained.
 
@@ -731,14 +709,12 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input shapes
         gdf = geopandas.read_file(shape_file)
-        gdf = gdf if select_value is None else gdf[gdf[value_column].isin(select_value)].reset_index(drop=True)
+        gdf = gdf if select_values is None else gdf[gdf[value_column].isin(select_values)].reset_index(drop=True)
 
         # array from geometries
         with rasterio.open(mask_file) as mask_raster:
@@ -755,9 +731,7 @@ class Raster:
                 dtype=mask_profile['dtype']
             )
             # replace empty region by given value
-            if fill_mask is None:
-                pass
-            else:
+            if fill_mask is not None:
                 output_array[mask_array & (output_array == mask_profile['nodata'])] = fill_mask
             # saving output raster
             with rasterio.open(output_file, mode='w', **mask_profile) as output_raster:
@@ -772,14 +746,14 @@ class Raster:
         shape_file: str,
         value_column: str,
         output_file: str,
-        select_value: typing.Optional[list[float]] = None,
+        select_values: typing.Optional[list[float]] = None,
         all_touched: bool = True,
         dtype: typing.Optional[str] = None,
-        nodata: typing.Optional[int] = None
+        nodata: typing.Optional[float] = None
     ) -> list[float]:
 
         '''
-        Overlays geometries corresponding to specified values
+        Overlays geometries corresponding to specified float values
         in a shapefile column onto the input raster. If no specific value
         is provided, all values in the column will be used.
 
@@ -798,8 +772,8 @@ class Raster:
         output_file : str
             Path to save the output raster file.
 
-        select_value : list of float, optional
-            A list of specific values from the selected column to include.
+        select_values : list, optional
+            A list of specific float values from the selected column to include.
             If None, all values from the selected column are used.
 
         all_touched : bool, optional
@@ -811,7 +785,7 @@ class Raster:
             Data type of the output raster.
             If None, the data type of the input raster is retained.
 
-        nodata : int, optional
+        nodata : float, optional
             NoData value to assign in the output raster.
             If None, the NoData value of the input raster is retained.
 
@@ -826,12 +800,10 @@ class Raster:
         check_file = Core().is_valid_raster_driver(output_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # input GeoDataFrame
         gdf = geopandas.read_file(shape_file)
-        gdf = gdf if select_value is None else gdf[gdf[value_column].isin(select_value)].reset_index(drop=True)
+        gdf = gdf if select_values is None else gdf[gdf[value_column].isin(select_values)].reset_index(drop=True)
         paste_value = gdf[value_column].unique().tolist()
 
         # pasting geometries to input raster
@@ -901,8 +873,6 @@ class Raster:
         check_file = Core().is_valid_raster_driver(output_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # reclassify raster array
         with rasterio.open(input_file) as input_raster:
@@ -1010,9 +980,7 @@ class Raster:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input array
@@ -1053,7 +1021,7 @@ class Raster:
     def array_to_geometries(
         self,
         raster_file: str,
-        select_value: tuple[float, ...],
+        select_values: tuple[float, ...],
         shape_file: str,
     ) -> geopandas.GeoDataFrame:
 
@@ -1065,7 +1033,7 @@ class Raster:
         raster_file : str
             Path to the input raster file.
 
-        select_value : tuple
+        select_values : tuple
             A tuple of selected raster values. All raster values
             will be selected if the input list is empty.
 
@@ -1083,18 +1051,16 @@ class Raster:
         check_file = Core().is_valid_ogr_driver(shape_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # geometries from raster array
         with rasterio.open(raster_file) as input_raster:
             raster_profile = input_raster.profile
             nodata = raster_profile['nodata']
             raster_array = input_raster.read(1)
-            select_value = select_value if len(select_value) > 0 else tuple(numpy.unique(raster_array[raster_array != nodata]))
+            select_values = select_values if len(select_values) > 0 else tuple(numpy.unique(raster_array[raster_array != nodata]))
             shapes = rasterio.features.shapes(
                 source=raster_array,
-                mask=numpy.isin(raster_array, select_value),
+                mask=numpy.isin(raster_array, select_values),
                 transform=raster_profile['transform'],
                 connectivity=8
             )
@@ -1149,9 +1115,7 @@ class Raster:
 
         # check output file
         check_file = Core().is_valid_raster_driver(raster_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # raster files
@@ -1236,9 +1200,7 @@ class Raster:
 
         # check output file
         check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # read input raster
@@ -1279,3 +1241,89 @@ class Raster:
                     output_profile = output_raster.profile
 
         return output_profile
+
+    def extract_value_by_mask(
+        self,
+        input_file: str,
+        mask_file: str,
+        output_file: str,
+        remove_values: typing.Optional[list[float]] = None,
+        fill_value: typing.Optional[float] = None,
+        dtype: typing.Optional[str] = None,
+        nodata: typing.Optional[float] = None
+    ) -> list[float]:
+
+        '''
+        Extracts values from the input raster based on the valid cells of the mask raster.
+        Both rasters must share the same cell alignment, coordinate reference system (CRS),
+        and pixel resolution; otherwise, the result may be incorrect.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        mask_file : str
+            Path to the mask raster file. All non-NoData values are treated as valid mask cells
+            for extracting corresponding values from the input raster.
+
+        output_file : str
+            Path to save the output raster file.
+
+        remove_values : list, optional
+            A list of float values to exclude from the mask raster.
+            If None, all valid values from the mask raster are used.
+
+        fill_value : float, optional
+            The value to assign in the output raster where the input raster contains NoData,
+            but the corresponding mask raster cells are valid.
+
+        dtype : str, optional
+            Data type of the output raster.
+            If None, the data type of the input raster is retained.
+
+        nodata : float, optional
+            NoData value to assign in the output raster.
+            If None, the NoData value of the input raster is retained.
+
+        Returns
+        -------
+        list
+            A list of unique values extracted from the output raster,
+            verifying the successful extraction process.
+        '''
+
+        # check output file
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # read input raster
+        with rasterio.open(input_file) as input_raster:
+            raster_profile = input_raster.profile
+            raster_nodata = input_raster.nodata
+            raster_array = input_raster.read(1)
+            # extracted array
+            with rasterio.open(mask_file) as mask_raster:
+                test_elements = [mask_raster.nodata] if remove_values is None else [mask_raster.nodata] + remove_values
+                mask_array = mask_raster.read(1)
+                true_array = numpy.isin(
+                    element=mask_array,
+                    test_elements=test_elements,
+                    invert=True
+                )
+                output_array = numpy.where(true_array, raster_array, raster_nodata)
+                # replace empty region by fill value
+                if fill_value is not None:
+                    output_array[
+                        (mask_array != mask_raster.nodata) & (output_array == raster_nodata)
+                    ] = fill_value
+                # saving output raster
+                raster_profile['nodata'] = raster_profile['nodata'] if nodata is None else nodata
+                output_array[output_array == raster_nodata] = raster_profile['nodata']
+                raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
+                with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
+                    output_raster.write(output_array, 1)
+                    output = list(numpy.unique(output_array[output_array != output_raster.nodata]))
+
+        return output

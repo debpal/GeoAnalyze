@@ -60,15 +60,11 @@ class Watershed:
         check_file = Core().is_valid_ogr_driver(basin_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # check validity of output raster file path
         check_file = Core().is_valid_raster_driver(output_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # flow direction array
         start_time = time.time()
@@ -222,21 +218,15 @@ class Watershed:
         summary = {}
 
         # check validity of output folder path
-        if os.path.isdir(folder_path):
-            pass
-        else:
+        if os.path.isdir(folder_path) is False:
             raise Exception('Input folder path does not exsit.')
 
         # check validty of outlet type
-        if outlet_type in ['single', 'multiple']:
-            pass
-        else:
+        if outlet_type not in ['single', 'multiple']:
             raise Exception('Outlet type must be one of [single, multiple].')
 
         # check validity of threshold flow accumalation type
-        if tacc_type in ['percentage', 'absolute']:
-            pass
-        else:
+        if tacc_type not in ['percentage', 'absolute']:
             raise Exception('Threshold accumulation type must be one of [percentage, absolute].')
 
         # DEM and mask array
@@ -517,13 +507,9 @@ class Watershed:
             check_file = Core().is_valid_raster_driver(file)
             if check_file is False:
                 raise Exception('Could not retrieve driver from the file path.')
-            else:
-                pass
 
         # check validty of outlet type
-        if outlet_type in ['single', 'multiple']:
-            pass
-        else:
+        if outlet_type not in ['single', 'multiple']:
             raise Exception('Outlet type must be one of [single, multiple].')
 
         # pit filling and flow direction from the DEM
@@ -585,8 +571,6 @@ class Watershed:
         check_file = Core().is_valid_raster_driver(flwacc_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # flow direction object
         with rasterio.open(flwdir_file) as input_flwdir:
@@ -670,14 +654,10 @@ class Watershed:
             check_file = Core().is_valid_ogr_driver(file)
             if check_file is False:
                 raise Exception('Could not retrieve driver from the file path.')
-            else:
-                pass
 
         # check validity of flow accumulation thereshold type
         if tacc_type not in ['percentage', 'absolute']:
             raise Exception('Threshold accumulation type must be one of [percentage, absolute].')
-        else:
-            pass
 
         # flow direction object
         with rasterio.open(flwdir_file) as input_flwdir:
@@ -765,8 +745,6 @@ class Watershed:
             check_file = Core().is_valid_ogr_driver(file)
             if check_file is False:
                 raise Exception('Could not retrieve driver from the file path.')
-            else:
-                pass
 
         # flow direction object
         with rasterio.open(flwdir_file) as input_flwdir:
@@ -850,8 +828,6 @@ class Watershed:
         check_file = Core().is_valid_raster_driver(slope_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # slope raster
         with rasterio.open(dem_file) as input_dem:
@@ -905,8 +881,6 @@ class Watershed:
         check_file = Core().is_valid_raster_driver(aspect_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # aspect raster
         with rasterio.open(dem_file) as input_dem:
@@ -1004,13 +978,9 @@ class Watershed:
         check_file = Core().is_valid_raster_driver(reclass_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # check lengths of lowerbounds and reclass values
-        if len(reclass_values) == len(reclass_lb):
-            pass
-        else:
+        if len(reclass_values) != len(reclass_lb):
             raise Exception('Both input lists must have the same length.')
 
         # slope array

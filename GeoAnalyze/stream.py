@@ -35,9 +35,7 @@ class Stream:
         '''
 
         # check LineString geometry type
-        if Core().shapefile_geometry_type(stream_file) == 'LineString':
-            pass
-        else:
+        if 'LineString' not in Core().shapefile_geometry_type(stream_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
         # stream GeoDataFrame
@@ -81,15 +79,11 @@ class Stream:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if 'LineString' in Core().shapefile_geometry_type(input_file):
-            pass
-        else:
+        if 'LineString' not in Core().shapefile_geometry_type(input_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
         # input stream GeoDataFrame
@@ -148,15 +142,11 @@ class Stream:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if 'LineString' in Core().shapefile_geometry_type(input_file):
-            pass
-        else:
+        if 'LineString' not in Core().shapefile_geometry_type(input_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
         # stream geodataframe
@@ -224,15 +214,11 @@ class Stream:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if 'LineString' in Core().shapefile_geometry_type(input_file):
-            pass
-        else:
+        if 'LineString' not in Core().shapefile_geometry_type(input_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
         # stream geodataframe
@@ -296,15 +282,11 @@ class Stream:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if 'LineString' in Core().shapefile_geometry_type(input_file):
-            pass
-        else:
+        if 'LineString' not in Core().shapefile_geometry_type(input_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
         # stream GeoDataFrame
@@ -362,15 +344,11 @@ class Stream:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # check LineString geometry type
-        if 'LineString' in Core().shapefile_geometry_type(input_file):
-            pass
-        else:
+        if 'LineString' not in Core().shapefile_geometry_type(input_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
         # stream geodataframe
@@ -428,9 +406,7 @@ class Stream:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input line segment
@@ -517,9 +493,7 @@ class Stream:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input line segement
@@ -603,9 +577,7 @@ class Stream:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input line segement

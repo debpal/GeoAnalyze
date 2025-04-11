@@ -31,9 +31,7 @@ class PackageData:
 
         # check validity of output file path
         check_file = Core().is_valid_raster_driver(dem_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # data file path

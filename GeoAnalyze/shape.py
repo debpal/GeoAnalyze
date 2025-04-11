@@ -36,9 +36,7 @@ class Shape:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input GeoDataFrame
@@ -88,9 +86,7 @@ class Shape:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input GeoDataFrame
@@ -134,9 +130,7 @@ class Shape:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input GeoDataFrame
@@ -182,9 +176,7 @@ class Shape:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input GeoDataFrame
@@ -229,9 +221,7 @@ class Shape:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input GeoDataFrame
@@ -270,9 +260,7 @@ class Shape:
 
         # check validity of output file path
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input GeoDataFrame
@@ -316,9 +304,7 @@ class Shape:
 
         # check output file
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # confirming input geometry type is Polygon
@@ -383,9 +369,7 @@ class Shape:
 
         # check output file
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # confirming input geometry type is Polygon
@@ -447,9 +431,7 @@ class Shape:
         geometry_type = Core().shapefile_geometry_type(
             shape_file=shape_file
         )
-        if 'Polygon' in geometry_type:
-            pass
-        else:
+        if 'Polygon' not in geometry_type:
             raise Exception('Input shapefile must have geometries of type Polygon.')
 
         # input GeoDataFrame
@@ -514,18 +496,14 @@ class Shape:
 
         # check output file
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # confirming input geometry type is Polygon
         geometry_type = Core().shapefile_geometry_type(
             shape_file=input_file
         )
-        if 'Polygon' in geometry_type:
-            pass
-        else:
+        if 'Polygon' not in geometry_type:
             raise Exception('Input shapefile must have geometries of type Polygon.')
 
         # input GeoDataFrame
@@ -579,9 +557,7 @@ class Shape:
 
         # check output file
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input GeoDataFrame
@@ -642,9 +618,7 @@ class Shape:
 
         # check output file
         check_file = Core().is_valid_ogr_driver(output_file)
-        if check_file is True:
-            pass
-        else:
+        if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
         # get shape files
