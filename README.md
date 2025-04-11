@@ -47,25 +47,27 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
   
 - Rasterizing input geometries
 - Rescaling raster resolution
-- Clipping rasters using shapefiles
-- Overlaying geometries onto rasters
-- Reprojecting the Coordinate Reference System (CRS) 
-- Handling NoData values in rasters  
-- Extracting raster boundary polygons
-- Reclassifying rasters values
+- Clipping a raster using a shapefile
+- Overlaying geometries onto a raster
+- Reprojecting the Coordinate Reference System (CRS)
+- Handling NoData values in a raster  
+- Generating boundary polygons from a raster
+- Reclassifying raster values
 - Counting unique raster values
-- Merging raster files
 - Trimming and extending rasters
+- Extracting raster values using a mask
+- Merging multiple raster files
 
 
 ### *Shapefile*
 
-- Vectorizing raster array
-- Aggregating geometries
+- Vectorizing a raster array
+- Aggregating geometries from multiple shapefiles
 - Executing spatial joins on geometries
-- Reprojecting CRS
+- Reprojecting the CRS
 - Filling polygons
-- Performing column analysis 
+- Performing column operations on a shapefile
+
 
 
 ## File Operations (Irrespective of Extensions)
