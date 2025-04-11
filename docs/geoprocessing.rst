@@ -141,10 +141,10 @@ To extend a raster to match the spatial extent of a mask raster, use the followi
         output_file=r"C:\users\username\folder\input_extended.tif"
     )
 
-Extracting Boundaries of a Raster
+Generating Boundaries of a Raster
 -----------------------------------
 
-To extract the boundary polygons of a raster, use the following code:
+To generate the boundary polygons of a raster, use the following code:
 
 
 .. code-block:: python
@@ -168,6 +168,22 @@ To count the unique values in a raster, use the following code:
     raster.count_unique_values(
         raster_file=r"C:\users\username\folder\landuse.tif",
         shape_file=r"C:\users\username\folder\landuse_count.csv"
+    )
+    
+    
+Extracting Raster Values by Mask
+----------------------------------------
+
+To extract values from an input raster based on a mask raster, use the following code:
+
+
+.. code-block:: python
+
+    # extracting raster values by mask
+    raster.extract_value_by_mask(
+        input_file=r"C:\users\username\folder\flwdir.tif",
+        mask_file=r"C:\users\username\folder\stream.tif",
+        output_file=r"C:\users\username\folder\flwdir_extract.tif"
     )
     
     

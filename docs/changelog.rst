@@ -2,6 +2,17 @@
 Release Notes
 ===============
 
+Version 1.1.1
+---------------
+
+* **Release date:** To be released soon on the PyPI repository.
+
+* **Feature Additions:** New functions added to the :class:`GeoAnalyze.Raster` class.
+
+* **Documentation:** A tutorial has been added on how to use the newly introduced features.
+
+* **Development status:** Upgraded from Beta to Stable.
+
 
 Version 1.1.0
 ---------------
