@@ -798,59 +798,6 @@ class Watershed:
 
         return output
 
-    def get_slope(
-        self,
-        dem_file: str,
-        slope_file: str
-    ) -> str:
-
-        '''
-        Computes slope from the DEM without pit filling.
-
-        Parameters
-        ----------
-        dem_file : str
-            Path to the input DEM raster file.
-
-        slope_file : str
-            Path to save the output slope raster file.
-
-        Returns
-        -------
-        str
-            A message indicating the time required for all geoprocessing computations.
-        '''
-
-        # start time
-        start_time = time.time()
-
-        # check validity of output file path
-        check_file = Core().is_valid_raster_driver(slope_file)
-        if check_file is False:
-            raise Exception('Could not retrieve driver from the file path.')
-
-        # slope raster
-        with rasterio.open(dem_file) as input_dem:
-            raster_profile = input_dem.profile
-            slope_array = pyflwdir.dem.slope(
-                elevtn=input_dem.read(1).astype('float32'),
-                nodata=raster_profile['nodata'],
-                transform=raster_profile['transform']
-            )
-
-        # saving slope raster
-        raster_profile.update(
-            {'dtype': 'float32'}
-        )
-        with rasterio.open(slope_file, 'w', **raster_profile) as output_slope:
-            output_slope.write(slope_array, 1)
-
-        # required time
-        required_time = time.time() - start_time
-        output = f'Time required for computing slope: {required_time:.2f} seconds.'
-
-        return output
-
     def get_aspect(
         self,
         dem_file: str,
@@ -909,6 +856,59 @@ class Watershed:
         # required time
         required_time = time.time() - start_time
         output = f'Time required for computing aspect: {required_time:.2f} seconds.'
+
+        return output
+
+    def get_slope(
+        self,
+        dem_file: str,
+        slope_file: str
+    ) -> str:
+
+        '''
+        Computes slope from the DEM without pit filling.
+
+        Parameters
+        ----------
+        dem_file : str
+            Path to the input DEM raster file.
+
+        slope_file : str
+            Path to save the output slope raster file.
+
+        Returns
+        -------
+        str
+            A message indicating the time required for all geoprocessing computations.
+        '''
+
+        # start time
+        start_time = time.time()
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(slope_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # slope raster
+        with rasterio.open(dem_file) as input_dem:
+            raster_profile = input_dem.profile
+            slope_array = pyflwdir.dem.slope(
+                elevtn=input_dem.read(1).astype('float32'),
+                nodata=raster_profile['nodata'],
+                transform=raster_profile['transform']
+            )
+
+        # saving slope raster
+        raster_profile.update(
+            {'dtype': 'float32'}
+        )
+        with rasterio.open(slope_file, 'w', **raster_profile) as output_slope:
+            output_slope.write(slope_array, 1)
+
+        # required time
+        required_time = time.time() - start_time
+        output = f'Time required for computing slope: {required_time:.2f} seconds.'
 
         return output
 

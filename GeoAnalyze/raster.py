@@ -654,7 +654,7 @@ class Raster:
         output_file: str,
         select_values: typing.Optional[list[float]] = None,
         all_touched: bool = True,
-        fill_mask: typing.Optional[float] = None,
+        fill_value: typing.Optional[float] = None,
         dtype: typing.Optional[str] = None,
         nodata: typing.Optional[float] = None
     ) -> rasterio.profiles.Profile:
@@ -689,7 +689,7 @@ class Raster:
             otherwise, only pixels whose center is within the geometries will be considered.
             Default is True.
 
-        fill_mask : float, optional
+        fill_value : float, optional
             Optional value to assign to NoData pixels not covered
             by the geometries within the mask region.
 
@@ -731,8 +731,8 @@ class Raster:
                 dtype=mask_profile['dtype']
             )
             # replace empty region by given value
-            if fill_mask is not None:
-                output_array[mask_array & (output_array == mask_profile['nodata'])] = fill_mask
+            if fill_value is not None:
+                output_array[mask_array & (output_array == mask_profile['nodata'])] = fill_value
             # saving output raster
             with rasterio.open(output_file, mode='w', **mask_profile) as output_raster:
                 output_raster.write(output_array, 1)

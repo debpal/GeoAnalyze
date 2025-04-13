@@ -1,7 +1,11 @@
 import geopandas
 import shapely
 import random
+import pandas
 import typing
+import tempfile
+import os
+import json
 from .core import Core
 
 
@@ -109,16 +113,18 @@ class Stream:
 
         return output
 
-    def connectivity_to_downstream_segment(
+    def connectivity_adjacent_downstream_segment(
         self,
         input_file: str,
         stream_col: str,
         output_file: str,
-        link_col: str = 'ds_id'
+        link_col: str = 'ds_id',
+        unlinked_id: int = -1
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Identifies connected downstream segment identifiers.
+        Identifies the next directly connected downstream identifier
+        for each segment in a stream network shapefile.
 
         Parameters
         ----------
@@ -126,18 +132,26 @@ class Stream:
             Path to the input stream shapefile.
 
         stream_col : str
-            Column name in the stream shapefile containing a unique identifier for each stream segment.
+            Column name in the stream shapefile containing
+            a unique identifier for each stream segment.
 
         output_file : str
-            Path to save the output stream shapefile.
+            Path to save the output stream shapefile
+            with adjacent downstream connectivity information.
 
         link_col : str, optional
-            Column name to store connected downstream segment identifiers, default is 'ds_id'.
+            Name of the column to store the connected
+            downstream segment identifiers. Default is 'ds_id'.
+
+        unlinked_id : int, optional
+            Value to assign when a downstream segment identifier
+            is not found. Default is -1.
 
         Returns
         -------
         GeoDataFrame
-            A GeoDataFrame with an additional column for connected downstream segment identifiers.
+             GeoDataFrame with an added column indicating
+             the downstream segment identifier for each feature.
         '''
 
         # check validity of output file path
@@ -171,13 +185,325 @@ class Stream:
             if len(up_link) == 1:
                 downstream_link[dp_id] = up_link[0]
             else:
-                downstream_link[dp_id] = -1
+                downstream_link[dp_id] = unlinked_id
 
         # saving updated stream GeoDataFrame with connected downstream segment identifiers
         stream_gdf[link_col] = downstream_link.values()
         stream_gdf.to_file(output_file)
 
         return stream_gdf
+
+    # pytest pending
+    def connectivity_adjacent_upstream_segment(
+        self,
+        stream_file: str,
+        stream_col: str,
+        csv_file: str,
+        link_col: str = 'us_id',
+        unlinked_id: int = -1
+    ) -> pandas.DataFrame:
+
+        '''
+        Identifies the next directly connected upstream identifiers
+        for each segment in a stream network shapefile.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input stream shapefile.
+
+        stream_col : str
+            Column name in the stream shapefile containing
+            a unique identifier for each stream segment.
+
+        csv_file : str
+            Path to save the output CSV file
+            with adjacent upstream connectivity information.
+
+        link_col : str, optional
+            Name of the column to store the connected
+            upstream segment identifiers. Default is 'us_id'.
+
+        unlinked_id : int, optional
+            Value to assign when a upstream segment identifier
+            is not found. Default is -1.
+
+        Returns
+        -------
+        GeoDataFrame
+             GeoDataFrame with an added column indicating
+             the downstream segment identifier for each feature.
+        '''
+
+        # check LineString geometry type
+        if 'LineString' not in Core().shapefile_geometry_type(stream_file):
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
+        # temporary directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # connectivity to downstream segment identifiers
+            self.connectivity_adjacent_downstream_segment(
+                input_file=stream_file,
+                stream_col=stream_col,
+                output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
+            )
+            # read stream GeoDataFrame with downstream segment identifiers
+            stream_gdf = geopandas.read_file(
+                filename=os.path.join(tmp_dir, 'stream_downstream_id.shp')
+            )
+            # remove unlinked downstream segments
+            stream_df = stream_gdf[['ds_id', stream_col]]
+            stream_df = stream_df[~stream_df['ds_id'].isin([-1])].reset_index(drop=True)
+            # change column name
+            stream_df.columns = [stream_col, link_col]
+            # predict headwater segments
+            hw_list = [
+                i for i in range(1, len(stream_gdf) + 1) if i not in stream_df[stream_col].tolist()
+            ]
+            hw_df = pandas.DataFrame({stream_col: hw_list})
+            hw_df[link_col] = unlinked_id
+            # adjance upstream segements
+            ul_df = pandas.concat(
+                objs=[stream_df, hw_df],
+                ignore_index=True
+            )
+            ul_df = ul_df.sort_values(
+                by=[stream_col, link_col],
+                ignore_index=True
+            )
+            # saving adjacent upstream connectivity in CSV file
+            ul_df.to_csv(
+                path_or_buf=csv_file,
+                sep='\t',
+                index=False
+            )
+
+        return ul_df
+
+    def connectivity_upstream_to_downstream(
+        self,
+        stream_file: str,
+        stream_col: str,
+        json_file: str
+    ) -> dict[int, list[int]]:
+
+        '''
+        Identifies all consecutively connected downstream segment identifiers
+        up to the outlet point for each segment in a stream network shapefile.
+
+        Parameters
+        ----------
+        stream_file : str
+            Path to the input stream shapefile.
+
+        stream_col : str
+            Column name in the stream shapefile containing
+            a unique identifier for each stream segment.
+
+        json_file : str
+            Path to save the output JSON file
+            representing upstream to downstream connections.
+
+        Returns
+        -------
+        dict
+            A dictionary where each key is a stream segment identifier,
+            and the corresponding value is a list of all consecutively
+            connected downstream identifiers, ending at the outlet.
+        '''
+
+        # check LineString geometry type
+        if 'LineString' not in Core().shapefile_geometry_type(stream_file):
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
+        # temporary directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # connectivity to downstream segment identifiers
+            self.connectivity_adjacent_downstream_segment(
+                input_file=stream_file,
+                stream_col=stream_col,
+                output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
+            )
+            # read stream GeoDataFrame with downstream segment identifiers
+            stream_gdf = geopandas.read_file(
+                filename=os.path.join(tmp_dir, 'stream_downstream_id.shp')
+            )
+            stream_df = stream_gdf[[stream_col, 'ds_id']]
+            stream_link = dict(
+                (i, i) if j == -1 else (i, j) for i, j in zip(stream_df[stream_col], stream_df['ds_id'])
+            )
+            # upstream to downstream total connectivity
+            us2ds_link: dict[int, list[int]] = {
+                i: list() for i in stream_link.keys()
+            }
+            for i in stream_link:
+                fix_i = i
+                while True:
+                    if stream_link[i] in us2ds_link[fix_i]:
+                        break
+                    else:
+                        us2ds_link[fix_i].append(stream_link[i])
+                        i = stream_link[i]
+            # saving upstream to downstream connectivity in json file
+            with open(json_file, 'w') as output_us2ds:
+                json.dump(us2ds_link, output_us2ds)
+
+        return us2ds_link
+
+    def connectivity_downstream_to_upstream(
+        self,
+        stream_file: str,
+        stream_col: str,
+        json_file: str
+    ) -> dict[int, list[list[int]]]:
+
+        '''
+        Identifies the connected upstream structure for each segment
+        in a stream network shapefile, tracing all upstream paths until
+        reaching headwater segments.
+
+        Parameters
+        ----------
+        stream_file : str
+            Path to the input stream shapefile.
+
+        stream_col : str
+            Column name in the stream shapefile containing
+            a unique identifier for each stream segment.
+
+        json_file : str
+            Path to save the output JSON file
+            representing downstream to upstream connections.
+
+        Returns
+        -------
+        dict
+            A dictionary where each key is a stream segment identifier,
+            and the corresponding value is a list of lists, each representing
+            a unique upstream path ending at a headwater segment.
+        '''
+
+        # check LineString geometry type
+        if 'LineString' not in Core().shapefile_geometry_type(stream_file):
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
+        # temporary directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # connectivity to downstream segment identifiers
+            self.connectivity_adjacent_downstream_segment(
+                input_file=stream_file,
+                stream_col=stream_col,
+                output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
+            )
+            # read stream GeoDataFrame with downstream segment identifiers
+            stream_gdf = geopandas.read_file(
+                filename=os.path.join(tmp_dir, 'stream_downstream_id.shp')
+            )
+            stream_df = stream_gdf[[stream_col, 'ds_id']]
+            stream_link = {
+                i: j for i, j in zip(stream_df[stream_col], stream_df['ds_id'])
+            }
+            # downstream to upstream total connectivity
+            ds2us_link: dict[int, list[list[int]]] = {
+                i: list() for i in stream_link.keys()
+            }
+            for i in stream_link.keys():
+                if i not in stream_link.values():
+                    pass
+                else:
+                    i_connect = [i]
+                    while True:
+                        i_upstream = list(
+                            filter(
+                                lambda x: stream_link[x] in i_connect, stream_link
+                            )
+                        )
+                        if len(i_upstream) == 0:
+                            break
+                        else:
+                            ds2us_link[i].append(i_upstream)
+                            i_connect = ds2us_link[i][-1]
+            # saving downstream to upstream connectivity in json file
+            with open(json_file, 'w') as output_ds2us:
+                json.dump(ds2us_link, output_ds2us)
+
+        return ds2us_link
+
+    def connectivity_to_all_upstream_segments(
+        self,
+        stream_file: str,
+        stream_col: str,
+        csv_file: str,
+        link_col: str = 'us_id',
+        unlinked_id: int = -1
+    ) -> pandas.DataFrame:
+
+        '''
+        Converts the dictionary output from the
+        :meth:`GeoAnalyze.Stream.conncetivity_downstream_to_upstream` method
+        into a DataFrame with two columns: `stream_col` and `link_col`,
+        representing stream segment identifiers (which may appear multiple times)
+        and their corresponding consecutively connected upstream segments, respectively.
+
+        Parameters
+        ----------
+        stream_file : str
+            Path to the input stream shapefile.
+
+        stream_col : str
+            Column name in the stream shapefile containing
+            a unique identifier for each stream segment.
+
+        csv_file : str
+            Path to save the output JSON file
+            representing downstream to upstream connections.
+
+        link_col : str, optional
+            Name of the column to store the connected
+            upstream segment identifiers. Default is 'us_id'.
+
+        unlinked_id : int, optional
+            Value to assign when a upstream segment identifier is not found. Default is -1.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame with two columns `stream_col` and `link_col`.
+            The `stream_col` contains stream segment identifiers (which may appear multiple times),
+            and the `link_col` contains their corresponding connected upstream segment identifiers.
+        '''
+
+        # check LineString geometry type
+        if 'LineString' not in Core().shapefile_geometry_type(stream_file):
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
+        # temporary directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # downstream to upstream total connectivity
+            ds2us_link = self.connectivity_downstream_to_upstream(
+                stream_file=stream_file,
+                stream_col=stream_col,
+                json_file=os.path.join(tmp_dir, 'stream_ds2us.json')
+            )
+            # adjacent upstream segment
+            up_link = []
+            for key, value in ds2us_link.items():
+                value_list = [j for i in value for j in i]
+                if len(value_list) == 0:
+                    up_link.append({stream_col: key, link_col: unlinked_id})
+                else:
+                    for ul in value_list:
+                        up_link.append({stream_col: key, link_col: ul})
+            # converting list to DataFrame
+            ul_df = pandas.DataFrame(up_link)
+            # saving adjacent upstream connectivity in CSV file
+            ul_df.to_csv(
+                path_or_buf=csv_file,
+                sep='\t',
+                index=False
+            )
+
+        return ul_df
 
     def point_junctions(
         self,
@@ -204,7 +530,7 @@ class Stream:
             Path to save the output junction point shapefile.
 
         junction_col : str, optional
-            Column name to stroe junction point identifiers, default is 'j_id'.
+            Name of the column to store the connected downstream segment identifiers. Default is 'j_id'.
 
         Returns
         -------

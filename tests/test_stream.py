@@ -57,14 +57,46 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'stream_reverse.shp')
         )
         assert stream.is_flw_path_us_to_ds(os.path.join(tmp_dir, 'stream_reverse.shp')) is False
-        # connected downstream segement identifiers
-        cds_gdf = stream.connectivity_to_downstream_segment(
+        # connected adjacent downstream segement identifier
+        cds_gdf = stream.connectivity_adjacent_downstream_segment(
             input_file=stream_file,
             stream_col='flw_id',
-            output_file=os.path.join(tmp_dir, 'stream_ds_id.shp')
+            output_file=os.path.join(tmp_dir, 'stream_adjacent_ds_id.shp')
         )
         assert cds_gdf['ds_id'].iloc[0] == 4
         assert cds_gdf['ds_id'].iloc[-2] == 11
+        # connected adjacent upstream segement identifiers
+        aul_df = stream.connectivity_adjacent_upstream_segment(
+            stream_file=stream_file,
+            stream_col='flw_id',
+            csv_file=os.path.join(tmp_dir, 'stream_adjacent_us_id.csv')
+        )
+        assert len(aul_df) == 16
+        # connectivity from upstream to downstream
+        us2ds_dict = stream.connectivity_upstream_to_downstream(
+            stream_file=stream_file,
+            stream_col='flw_id',
+            json_file=os.path.join(tmp_dir, 'stream_us2ds.json')
+        )
+        assert us2ds_dict[1] == [4, 7, 8, 10, 11]
+        assert us2ds_dict[5] == [7, 8, 10, 11]
+        assert us2ds_dict[6] == [8, 10, 11]
+        # connectivity from downstream to upstream
+        ds2us_dict = stream.connectivity_downstream_to_upstream(
+            stream_file=stream_file,
+            stream_col='flw_id',
+            json_file=os.path.join(tmp_dir, 'stream_ds2us.json')
+        )
+        assert ds2us_dict[1] == []
+        assert ds2us_dict[4] == [[1, 3]]
+        assert ds2us_dict[7] == [[4, 5], [1, 3]]
+        # connectivity DataFrame from downstream to upstream
+        ul_df = stream.connectivity_to_all_upstream_segments(
+            stream_file=stream_file,
+            stream_col='flw_id',
+            csv_file=os.path.join(tmp_dir, 'stream_ul.csv')
+        )
+        assert len(ul_df) == 36
         # junction points
         junction_gdf = stream.point_junctions(
             input_file=stream_file,
@@ -143,12 +175,44 @@ def test_error_geometry(
                 output_file=os.path.join(tmp_dir, 'stream_reverse.shp')
             )
         assert exc_info.value.args[0] == message['error_geometry']
-        # connected downstream segement identifiers
+        # connected adjacent downstream segement identifier
         with pytest.raises(Exception) as exc_info:
-            stream.connectivity_to_downstream_segment(
+            stream.connectivity_adjacent_downstream_segment(
                 input_file=point_file,
                 stream_col='flw_id',
                 output_file='stream_ds_id.shp'
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
+        # connected adjacent uptream segement identifier
+        with pytest.raises(Exception) as exc_info:
+            stream.connectivity_adjacent_upstream_segment(
+                stream_file=point_file,
+                stream_col='flw_id',
+                csv_file='stream_adjacent_us_id.csv'
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
+        # connectivity from upstream to downstream
+        with pytest.raises(Exception) as exc_info:
+            stream.connectivity_upstream_to_downstream(
+                stream_file=point_file,
+                stream_col='flw_id',
+                json_file='stream_us2ds.json'
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
+        # connectivity from downstream to upstream
+        with pytest.raises(Exception) as exc_info:
+            stream.connectivity_downstream_to_upstream(
+                stream_file=point_file,
+                stream_col='flw_id',
+                json_file='stream_ds2us.json'
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
+        # connectivity DataFrame from downstream to upstream
+        with pytest.raises(Exception) as exc_info:
+            stream.connectivity_to_all_upstream_segments(
+                stream_file=point_file,
+                stream_col='flw_id',
+                csv_file='stream_ul.csv'
             )
         assert exc_info.value.args[0] == message['error_geometry']
         # junction points
@@ -189,7 +253,7 @@ def test_error_shapefile_driver(
     assert exc_info.value.args[0] == message['error_driver']
     # connected downstream segement identifiers
     with pytest.raises(Exception) as exc_info:
-        stream.connectivity_to_downstream_segment(
+        stream.connectivity_adjacent_downstream_segment(
             input_file='stream.shp',
             stream_col='flw_id',
             output_file='stream_ds_id.sh'

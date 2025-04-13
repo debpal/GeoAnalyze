@@ -173,7 +173,7 @@ def test_functions(
             mask_file=os.path.join(tmp_dir, 'dem.tif'),
             output_file=os.path.join(tmp_dir, 'stream_1234.tif'),
             select_values=[1, 2, 3, 4],
-            fill_mask=0,
+            fill_value=0,
             dtype='int16'
         )
         output_gdf = raster.count_unique_values(
