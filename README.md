@@ -13,27 +13,43 @@
 `GeoAnalyze` is a Python package designed to streamline geoprocessing by handling internal complexities and intermediate steps. Conceptualized and launched on October 10, 2024, this package is tailored for users with limited geospatial processing experience, allowing them to focus on desired outputs. Leveraging open-source geospatial Python modules, GeoAnalyze aims to empower users by providing high-level geoprocessing tools with fewer lines of code. This fast package is also useful for the users who has no access of paid GIS software packages.
 
 
-## Delineation Functions
+## Wateshed Delineation
 
 The `GeoAnalyze.Watershed` and `GeoAnalyze.Stream` classes provide fast and scalable watershed delineation functions by leveraging the computational efficiency of the PyPI package 
 [pyflwdir](https://github.com/Deltares/pyflwdir), without requiring a detailed understanding of it. These functions can be executed either individually or simultaneously.
 
-* Basin area extraction from extended Digital Elevation Model (DEM).
-* Pit filling of DEM.
-* Slope.
-* Flow direction.
-* Flow accumulation.
-* Stream extraction.
-* Subbaisn generation.
-* Stream link.
-* Main outlet and junction points.
+### *Hydrology*
+
+- Basin area extraction from an extended Digital Elevation Model (DEM)
+- DEM pit filling
+- Slope calculation
+- Slope classification
+- Aspect determination
+- Flow direction mapping
+- Flow accumulation computation
+- Stream extraction
+- Subbasin generation
+
 
 The computational efficiency of these functions is demonstrated in the following output figure.
 All delineation files—including basin area, flow direction, flow accumulation, slope, stream, outlets, and subbasins—can be generated within 30 seconds from a raster containing 14 million cells.
 
 ![All delineation files from DEM](https://github.com/debpal/GeoAnalyze/raw/main/docs/_static/dem_all_delineation.png)
 
- 
+
+
+### *Stream Network*
+
+- Determines the adjacent downstream segment for each stream segment
+- Retrieves adjacent upstream segments associated with each stream segment
+- Builds full connectivity structures from upstream to downstream
+- Computes connectivity structures from downstream to upstream
+- Detects junction points within the stream network
+- Locates drainage points within subbasins
+- Identifies main outlet points
+- Includes multiple functions for generating random boxes around selected stream segments
+
+
 ## Geoprocessing
 
 The `GeoAnalyze` package leverages the existing PyPI packages, such as, [rasterio](https://github.com/rasterio/rasterio),
