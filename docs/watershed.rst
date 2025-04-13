@@ -71,9 +71,9 @@ The following figure illustrates the basin extracted from the extended DEM based
 
 .. _delineation_outputs:
 
-Delineation Outputs
----------------------
-After obtaining the basin area of the DEM, the following code computes delineation raster files for flow direction, flow accumulation, and slope. Additionally, it generates shapefiles for the stream network, main outlets, subbasins, and drainage points of the subbasins.
+Hydrology
+-------------
+After obtaining the basin area of the DEM, the following code computes hydrological raster files for flow direction, flow accumulation, and slope. Additionally, it generates shapefiles for the stream network, main outlets, subbasins, and drainage points of the subbasins.
 
 For the input variable `outlet_type`, the recommended main outlet type is single, as the multiple option can create more than one main outlet. Since the multiple option was used to derive the basin area from the extended DEM, it would be inconsistent to generate multiple main outlets within the basin area.
 
@@ -102,19 +102,77 @@ The following figure illustrates the flow direction, flow accumulation, stream n
    <br><br>
 
 
-Stream Connectivity
----------------------
-Stream connectivity identifies the connected downstream segment identifiers for each segment in the stream network.
-The stream shapefile obtained from delineation includes a column named 'flw_id', which contains a unique identifier for each stream segment.
-The following code returns the stream GeoDataFrame with an additional column, 'ds_id', representing the connected downstream segment identifiers.
+Adjacent Connectivity
+----------------------------------
+Adjacent connectivity identifies the next connected segment identifiers for each stream segment in the stream network.
+The stream shapefile obtained in the previous section includes a column named `flw_id`, which contains a unique identifier for each stream segment.
+Using this file, the adjacent connectivty can be predicted by the follwoing code:
 
 
 .. code-block:: python
 
-    # stream connectivity
-    output = stream.connectivity_to_downstream_segment(
+    # adjacent downstream segment identifier
+    stream.connectivity_adjacent_downstream_segment(
         input_file=r"C:\users\username\folder\stream_lines.shp",
         stream_col='flw_id',
-        output_file=r"C:\users\username\folder\stream_connectivity.shp"
+        output_file=r"C:\users\username\folder\stream_adjacent_ds_id.shp"
+    )
+    # adjacent downstream segment identifier
+    stream.connectivity_adjacent_upstream_segment(
+        stream_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        csv_file=r"C:\users\username\folder\stream_adjacent_us_id.csv"
+    )
+    
+    
+    
+Total Connectivity
+------------------------
+Total connectivity returns dictionaries where the keys are stream segment identifiers and
+the values are lists representing the complete connectivity structure in the stream network.
+The two functions below provide connectivity in both directions: from upstream to downstream up to an outlet point,
+and from downstream to upstream until reaching a headwater segment.
+
+.. code-block:: python
+
+    # upstream to downstream total connectivity
+    stream.connectivity_upstream_to_downstream(
+        stream_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        json_filer"C:\users\username\folder\stream_connectivity_upstream_to_downstream.json"
+    )
+
+    # downstream to upstream total connectivity
+    stream.connectivity_downstream_to_upstream(
+        stream_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        json_file=r"C:\users\username\folder\stream_connectivity_downstream_to_upstream.json"
+    )
+    
+    
+Junction Points
+--------------------
+To get the junction points in a stream network, use the following code:
+
+.. code-block:: python
+
+    # junction points
+    stream.point_junctions(
+        input_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        output_file=r"C:\users\username\folder\stream_junction_points.shp"
+    )
+    
+    
+Main Outlet Points
+--------------------
+To get the main outlet points in a stream network, use the following code:
+
+.. code-block:: python
+
+    # main outlet points
+    stream.point_main_outlets(
+        input_file=r"C:\users\username\folder\stream_lines.shp",
+        output_file=r"C:\users\username\folder\stream_main_outlets.shp"
     )
     
