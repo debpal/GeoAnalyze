@@ -73,6 +73,7 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
 - Trimming and extending rasters
 - Extracting raster values using a mask
 - Merging multiple raster files
+- Rewriting a raster with a different driver
 
 
 ### *Shapefile*
