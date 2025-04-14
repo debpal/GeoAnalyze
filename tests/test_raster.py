@@ -179,6 +179,14 @@ def test_error_raster_file_driver(
             output_file='flwdir_extract.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # raster driver conversion
+    with pytest.raises(Exception) as exc_info:
+        raster.driver_convert(
+            input_file='flwdir.tif',
+            target_driver='RST',
+            output_file='flwdir.rsttt'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
 
 
 def test_error_resampling_method(

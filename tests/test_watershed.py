@@ -296,6 +296,13 @@ def test_functions(
             fill_value=0
         )
         assert all([i in output_list for i in [0, 1, 2, 4, 8, 16, 32, 64, 128]])
+        # raster driver conversion
+        output_profile = raster.driver_convert(
+            input_file=os.path.join(tmp_dir, 'flwdir.tif'),
+            target_driver='RST',
+            output_file=os.path.join(tmp_dir, 'flwdir.rst')
+        )
+        assert output_profile['driver'] == 'RST'
 
 
 def test_error_invalid_folder_path(

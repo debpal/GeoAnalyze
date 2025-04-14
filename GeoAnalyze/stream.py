@@ -123,7 +123,7 @@ class Stream:
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Identifies the next directly connected downstream identifier
+        Identifies the adjacent connected downstream identifier
         for each segment in a stream network shapefile.
 
         Parameters
@@ -193,7 +193,6 @@ class Stream:
 
         return stream_gdf
 
-    # pytest pending
     def connectivity_adjacent_upstream_segment(
         self,
         stream_file: str,
@@ -204,7 +203,7 @@ class Stream:
     ) -> pandas.DataFrame:
 
         '''
-        Identifies the next directly connected upstream identifiers
+        Identifies the adjacent connected upstream identifiers
         for each segment in a stream network shapefile.
 
         Parameters
@@ -225,14 +224,16 @@ class Stream:
             upstream segment identifiers. Default is 'us_id'.
 
         unlinked_id : int, optional
-            Value to assign when a upstream segment identifier
+            Value to assign when an upstream segment identifier
             is not found. Default is -1.
 
         Returns
         -------
-        GeoDataFrame
-             GeoDataFrame with an added column indicating
-             the downstream segment identifier for each feature.
+        DataFrame
+            A DataFrame with two columns `stream_col` and `link_col`.
+            The `stream_col` contains stream segment identifiers
+            (which may appear multiple times), and the `link_col` contains
+            their corresponding connected adjacent upstream segment identifiers.
         '''
 
         # check LineString geometry type
@@ -360,7 +361,7 @@ class Stream:
         '''
         Identifies the connected upstream structure for each segment
         in a stream network shapefile, tracing all upstream paths until
-        reaching headwater segments.
+        reaching a headwater segment.
 
         Parameters
         ----------
@@ -443,7 +444,8 @@ class Stream:
         :meth:`GeoAnalyze.Stream.conncetivity_downstream_to_upstream` method
         into a DataFrame with two columns: `stream_col` and `link_col`,
         representing stream segment identifiers (which may appear multiple times)
-        and their corresponding consecutively connected upstream segments, respectively.
+        and their corresponding consecutively connected upstream segments
+        ending at a headwater segment, respectively.
 
         Parameters
         ----------
@@ -470,7 +472,8 @@ class Stream:
         DataFrame
             A DataFrame with two columns `stream_col` and `link_col`.
             The `stream_col` contains stream segment identifiers (which may appear multiple times),
-            and the `link_col` contains their corresponding connected upstream segment identifiers.
+            and the `link_col` contains their corresponding consecutively connected
+            upstream segment identifiers ending at a headwater segment.
         '''
 
         # check LineString geometry type
@@ -496,6 +499,10 @@ class Stream:
                         up_link.append({stream_col: key, link_col: ul})
             # converting list to DataFrame
             ul_df = pandas.DataFrame(up_link)
+            ul_df = ul_df.sort_values(
+                by=[stream_col, link_col],
+                ignore_index=True
+            )
             # saving adjacent upstream connectivity in CSV file
             ul_df.to_csv(
                 path_or_buf=csv_file,

@@ -1327,3 +1327,48 @@ class Raster:
                     output = list(numpy.unique(output_array[output_array != output_raster.nodata]))
 
         return output
+
+    def driver_convert(
+        self,
+        input_file: str,
+        target_driver: str,
+        output_file: str
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Converts the input raster file to a new format using the specified driver.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        target_driver : str
+            GDAL-compatible name of the target driver (e.g., 'GTiff', 'RST').
+
+        output_file : str
+            Path to save the output raster file.
+
+        Returns
+        -------
+        profile
+            A metadata profile containing information about the output raster.
+        '''
+
+        # check output file
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # read input raster
+        with rasterio.open(input_file) as input_raster:
+            raster_profile = input_raster.profile
+            # save output raster
+            raster_profile['driver'] = target_driver
+            with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
+                for i in range(1, raster_profile['count'] + 1):
+                    raster_array = input_raster.read(i)
+                    output_raster.write(raster_array, i)
+                    output = output_raster.profile
+
+        return output
