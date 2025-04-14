@@ -202,6 +202,21 @@ To merge raster files of the same type, store them in a folder (without mixing o
     )
     
     
+Changing Raster Driver
+----------------------------
+
+To rewrite a raster file using a different driver, use the following code:
+
+.. code-block:: python
+
+    # changing raster driver
+    raster.driver_convert(
+        input_file=r"C:\users\username\folder\input.tif",
+        target_driver='RST',
+        output_file=r"C:\users\username\folder\output.rst"
+    )
+    
+    
 Vectorizing Raster Array 
 --------------------------
 
