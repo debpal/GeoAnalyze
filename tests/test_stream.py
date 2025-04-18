@@ -47,7 +47,7 @@ def test_functions(
         stream_gdf = packagedata.geodataframe_stream
         stream_gdf.to_file(stream_file)
         # checking flow path direction from upstream to downstream
-        check_flwpath = stream.is_flw_path_us_to_ds(
+        check_flwpath = stream.flw_path_us2ds_check(
             stream_file=stream_file
         )
         assert check_flwpath
@@ -56,7 +56,7 @@ def test_functions(
             input_file=stream_file,
             output_file=os.path.join(tmp_dir, 'stream_reverse.shp')
         )
-        assert stream.is_flw_path_us_to_ds(os.path.join(tmp_dir, 'stream_reverse.shp')) is False
+        assert stream.flw_path_us2ds_check(os.path.join(tmp_dir, 'stream_reverse.shp')) is False
         # connected adjacent downstream segement identifier
         cds_gdf = stream.connectivity_adjacent_downstream_segment(
             input_file=stream_file,
@@ -118,7 +118,21 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'main_outlet_points.shp')
         )
         assert stream_gdf['geometry'].iloc[-1].coords[-1] == outlet_gdf['geometry'].iloc[-1].coords[0]
-        # ox touching the selected segment in a stream path
+        # Strahler stream order
+        strahler_gdf = stream.order_strahler(
+            input_file=stream_file,
+            stream_col='flw_id',
+            output_file=os.path.join(tmp_dir, 'strahler.shp')
+        )
+        assert strahler_gdf['strahler'].max() == 2
+        # Shreve stream order
+        shreve_gdf = stream.order_shreve(
+            input_file=stream_file,
+            stream_col='flw_id',
+            output_file=os.path.join(tmp_dir, 'shreve.shp')
+        )
+        assert shreve_gdf['shreve'].max() == 6
+        # box touching the selected segment in a stream path
         selected_line = stream_gdf[stream_gdf['flw_id'] == 3]['geometry'].iloc[0]
         box_gdf = stream.box_touch_selected_segment(
             input_file=stream_file,
@@ -164,7 +178,7 @@ def test_error_geometry(
         point_gdf.to_file(point_file)
         # checking flow path direction
         with pytest.raises(Exception) as exc_info:
-            stream.is_flw_path_us_to_ds(
+            stream.flw_path_us2ds_check(
                 stream_file=point_file
             )
         assert exc_info.value.args[0] == message['error_geometry']
@@ -237,6 +251,22 @@ def test_error_geometry(
                 output_file=os.path.join(tmp_dir, 'main_outlet_points.shp')
             )
         assert exc_info.value.args[0] == message['error_geometry']
+        # Strahler stream order
+        with pytest.raises(Exception) as exc_info:
+            stream.order_strahler(
+                input_file=point_file,
+                stream_col='flw_id',
+                output_file=os.path.join(tmp_dir, 'strahler.shp')
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
+        # Shreve stream order
+        with pytest.raises(Exception) as exc_info:
+            stream.order_shreve(
+                input_file=point_file,
+                stream_col='flw_id',
+                output_file=os.path.join(tmp_dir, 'shreve.shp')
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
 
 
 def test_error_shapefile_driver(
@@ -279,6 +309,22 @@ def test_error_shapefile_driver(
         stream.point_main_outlets(
             input_file='stream.shp',
             output_file='main_outlet_points.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # Strahler stream order
+    with pytest.raises(Exception) as exc_info:
+        stream.order_strahler(
+            input_file='stream.shp',
+            stream_col='flw_id',
+            output_file='strahler.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # Shreve stream order
+    with pytest.raises(Exception) as exc_info:
+        stream.order_shreve(
+            input_file='stream.shp',
+            stream_col='flw_id',
+            output_file='shreve.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
     # box touching the selected segment in a stream path
