@@ -45,6 +45,7 @@ Please refer to the :ref:`Watershed Delineation <watershed_delineation>` section
 - Detects junction points within the stream network
 - Locates drainage points within subbasins
 - Identifies main outlet points
+- Computes Strahler and Shreve orders of stream segments
 - Includes multiple functions for generating random boxes around selected stream segments
 
 Geoprocessing

@@ -176,3 +176,23 @@ To get the main outlet points in a stream network, use the following code:
         output_file=r"C:\users\username\folder\stream_main_outlets.shp"
     )
     
+    
+Stream Order
+----------------
+To get Strahler and Shreve order of stream segemnets, use the following code:
+
+.. code-block:: python
+
+    # Strahler order
+    stream.order_strahler(
+        input_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        output_file=r"C:\users\username\folder\strahler_order.shp"
+    )
+    
+    # Shreve order
+    stream.order_shreve(
+        input_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        output_file=r"C:\users\username\folder\shreve_order.shp"
+    )
