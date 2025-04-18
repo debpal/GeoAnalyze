@@ -47,6 +47,7 @@ All delineation files—including basin area, flow direction, flow accumulation,
 - Detects junction points within the stream network
 - Locates drainage points within subbasins
 - Identifies main outlet points
+- Computes Strahler and Shreve orders of stream segments
 - Includes multiple functions for generating random boxes around selected stream segments
 
 
@@ -114,7 +115,7 @@ A brief example of how to start:
 
 ```python
 >>> import GeoAnalyze
->>> file = GeoAnalyze.File()
+>>> file = GeoAnalyze.Watershed()
 ```
 
 ## Documentation
