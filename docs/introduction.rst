@@ -42,6 +42,7 @@ Please refer to the :ref:`Watershed Delineation <watershed_delineation>` section
 - Retrieves adjacent upstream segments associated with each stream segment
 - Builds full connectivity structures from upstream to downstream
 - Computes connectivity structures from downstream to upstream
+- Removes all upstream connectivity up to headwaters for targeted stream segments
 - Detects junction points within the stream network
 - Locates drainage points within subbasins
 - Identifies main outlet points

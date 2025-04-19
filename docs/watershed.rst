@@ -2,10 +2,10 @@
 
 
 =======================
-Watershed Delineation
+Watershed Hydrology
 =======================
 
-This section provides a brief overview of the features available for watershed delineation using a Digital Elevation Model (DEM).
+This section provides a brief overview of the features available for watershed hydrology using a Digital Elevation Model (DEM).
 
 
 Class Instance
@@ -147,6 +147,21 @@ and from downstream to upstream until reaching a headwater segment.
         stream_file=r"C:\users\username\folder\stream_lines.shp",
         stream_col='flw_id',
         json_file=r"C:\users\username\folder\stream_connectivity_downstream_to_upstream.json"
+    )
+    
+    
+Remove Connectivity
+------------------------
+To remove targeted stream segments and their corresponding upstream connections up to the headwaters, use the following code:
+
+.. code-block:: python
+
+    # removing stream segments and their upstream connectivity
+    stream.connectivity_remove_to_headwater(
+        input_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        remove_segments=[4],
+        output_file=r"C:\users\username\folder\stream_connectivity_remove.shp"
     )
     
     
