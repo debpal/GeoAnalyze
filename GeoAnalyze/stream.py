@@ -286,7 +286,7 @@ class Stream:
         stream_file: str,
         stream_col: str,
         json_file: str
-    ) -> dict[int, list[int]]:
+    ) -> dict[float, list[float]]:
 
         '''
         Identifies all consecutively connected downstream segment identifiers
@@ -336,7 +336,7 @@ class Stream:
                 (i, i) if j == -1 else (i, j) for i, j in zip(stream_df[stream_col], stream_df['ds_id'])
             )
             # upstream to downstream total connectivity
-            us2ds_link: dict[int, list[int]] = {
+            us2ds_link: dict[float, list[float]] = {
                 i: list() for i in stream_link.keys()
             }
             for i in stream_link:
@@ -358,7 +358,7 @@ class Stream:
         stream_file: str,
         stream_col: str,
         json_file: str
-    ) -> dict[int, list[list[int]]]:
+    ) -> dict[float, list[list[float]]]:
 
         '''
         Identifies the connected upstream structure for each segment
@@ -407,7 +407,7 @@ class Stream:
                 i: j for i, j in zip(stream_df[stream_col], stream_df['ds_id'])
             }
             # downstream to upstream total connectivity
-            ds2us_link: dict[int, list[list[int]]] = {
+            ds2us_link: dict[float, list[list[float]]] = {
                 i: list() for i in stream_link.keys()
             }
             for i in stream_link.keys():
@@ -513,6 +513,80 @@ class Stream:
             )
 
         return ul_df
+
+    def connectivity_remove_to_headwater(
+        self,
+        input_file: str,
+        stream_col: str,
+        remove_segments: list[float],
+        output_file: str
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Removes targeted stream segments and all their upstream connections
+        up to headwaters in a stream network shapefile.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input stream shapefile.
+
+        stream_col : str
+            Column name in the stream shapefile containing
+            a unique identifier for each stream segment.
+
+        remove_segments : list
+            A list of stream segment identifiers to remove, along with
+            all their upstream connections up to the headwaters.
+
+        output_file : str
+            Path to save the output stream shapefile after removing the
+            specified segments and their upstream connections.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame representing the updated stream network after
+            removing the targeted stream segments and their upstream paths.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check LineString geometry type
+        if 'LineString' not in Core().shapefile_geometry_type(input_file):
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
+        # stream geodataframe
+        stream_gdf = geopandas.read_file(input_file)
+
+        if len(remove_segments) == 0:
+            pass
+        else:
+            # temporary directory
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                # downstream to upstream total connectivity
+                ds2us_link = self.connectivity_downstream_to_upstream(
+                    stream_file=input_file,
+                    stream_col=stream_col,
+                    json_file=os.path.join(tmp_dir, 'stream_ds2us.json')
+                )
+                # collecting targeted remove ids and their upstream connectivity
+                remove_ids: list[float] = []
+                for i in remove_segments:
+                    remove_ids = remove_ids + [i]
+                    if len(ds2us_link[i]) == 0:
+                        pass
+                    else:
+                        i_ul = [k for j in ds2us_link[i] for k in j]
+                        remove_ids = remove_ids + i_ul
+                # saving output GeoDataFrame
+                stream_gdf = stream_gdf[~stream_gdf[stream_col].isin(set(remove_ids))].reset_index(drop=True)
+                stream_gdf.to_file(output_file)
+
+        return stream_gdf
 
     def point_junctions(
         self,

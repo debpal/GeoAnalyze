@@ -97,6 +97,23 @@ def test_functions(
             csv_file=os.path.join(tmp_dir, 'stream_ul.csv')
         )
         assert len(ul_df) == 36
+        # connectivity remove of targeted segments and their upstream paths
+        remove1_gdf = stream.connectivity_remove_to_headwater(
+            input_file=stream_file,
+            stream_col='flw_id',
+            remove_segments=[],
+            output_file=os.path.join(tmp_dir, 'stream_connectivity_cut.shp')
+        )
+        assert len(remove1_gdf) == 11
+        remove2_gdf = stream.connectivity_remove_to_headwater(
+            input_file=stream_file,
+            stream_col='flw_id',
+            remove_segments=[4],
+            output_file=os.path.join(tmp_dir, 'stream_connectivity_cut.shp')
+        )
+        assert 4 not in remove2_gdf['flw_id'].tolist()
+        assert 1 not in remove2_gdf['flw_id'].tolist()
+        assert 3 not in remove2_gdf['flw_id'].tolist()
         # junction points
         junction_gdf = stream.point_junctions(
             input_file=stream_file,
@@ -229,6 +246,15 @@ def test_error_geometry(
                 csv_file='stream_ul.csv'
             )
         assert exc_info.value.args[0] == message['error_geometry']
+        # connectivity remove of targeted segments and their upstream paths
+        with pytest.raises(Exception) as exc_info:
+            stream.connectivity_remove_to_headwater(
+                input_file=point_file,
+                stream_col='flw_id',
+                remove_segments=[4],
+                output_file='stream_connectivity_cut.shp'
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
         # junction points
         with pytest.raises(Exception) as exc_info:
             stream.point_junctions(
@@ -287,6 +313,15 @@ def test_error_shapefile_driver(
             input_file='stream.shp',
             stream_col='flw_id',
             output_file='stream_ds_id.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # connectivity remove of targeted segments and their upstream paths
+    with pytest.raises(Exception) as exc_info:
+        stream.connectivity_remove_to_headwater(
+            input_file='stream.shp',
+            stream_col='flw_id',
+            remove_segments=[4],
+            output_file='stream_connectivity_cut.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
     # junction points
