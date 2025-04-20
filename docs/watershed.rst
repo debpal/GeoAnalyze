@@ -165,6 +165,22 @@ To remove targeted stream segments and their corresponding upstream connections 
     )
     
     
+Merge Connectivity
+------------------------
+The following code merges split stream segments either between two junction points or from a junction point upstream until a headwater is reached.
+The merged segment is assigned the identifier of the most downstream segment among those being merged, and the merge information is saved to an output JSON file.
+
+.. code-block:: python
+
+    # merging split stream segments
+    stream.connectivity_merge_of_split_segments(
+        input_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        output_file=r"C:\users\username\folder\stream_split_segments_merged.shp",
+        json_file=r"C:\users\username\folder\stream_split_segments_merged_information.json",
+    )
+    
+    
 Junction Points
 --------------------
 To get the junction points in a stream network, use the following code:
@@ -189,6 +205,19 @@ To get the main outlet points in a stream network, use the following code:
     stream.point_main_outlets(
         input_file=r"C:\users\username\folder\stream_lines.shp",
         output_file=r"C:\users\username\folder\stream_main_outlets.shp"
+    )
+    
+Headwater Points
+--------------------
+To extract headwater points, which are the starting points of stream segments with no upstream connections, use the following code:
+
+.. code-block:: python
+
+    # headwater points
+    stream.point_headwaters(
+        input_file=r"C:\users\username\folder\stream_lines.shp",
+        stream_col='flw_id',
+        output_file=r"C:\users\username\folder\stream_headwater_points.shp"
     )
     
     
