@@ -108,12 +108,21 @@ def test_functions(
         remove2_gdf = stream.connectivity_remove_to_headwater(
             input_file=stream_file,
             stream_col='flw_id',
-            remove_segments=[4],
+            remove_segments=[4, 1],
             output_file=os.path.join(tmp_dir, 'stream_connectivity_cut.shp')
         )
         assert 4 not in remove2_gdf['flw_id'].tolist()
         assert 1 not in remove2_gdf['flw_id'].tolist()
         assert 3 not in remove2_gdf['flw_id'].tolist()
+        # merge split segments in a stream network
+        merged_gdf = stream.connectivity_merge_of_split_segments(
+            input_file=os.path.join(tmp_dir, 'stream_connectivity_cut.shp'),
+            stream_col='flw_id',
+            output_file=os.path.join(tmp_dir, 'stream_connectivity_cut_merged.shp'),
+            json_file=os.path.join(tmp_dir, 'stream_connectivity_cut_merged_information.json')
+        )
+        assert len(merged_gdf) == 7
+        assert 5 not in merged_gdf['flw_id'].tolist()
         # junction points
         junction_gdf = stream.point_junctions(
             input_file=stream_file,
@@ -135,6 +144,16 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'main_outlet_points.shp')
         )
         assert stream_gdf['geometry'].iloc[-1].coords[-1] == outlet_gdf['geometry'].iloc[-1].coords[0]
+        # headwater points
+        hw_gdf = stream.point_headwaters(
+            input_file=stream_file,
+            stream_col='flw_id',
+            output_file=os.path.join(tmp_dir, 'headwater_points.shp')
+        )
+        assert len(hw_gdf) == 6
+        assert all(hw_gdf.geometry.geom_type == 'Point')
+        assert 4 not in hw_gdf['flw_id'].tolist()
+        assert 10 not in hw_gdf['flw_id'].tolist()
         # Strahler stream order
         strahler_gdf = stream.order_strahler(
             input_file=stream_file,
@@ -255,6 +274,15 @@ def test_error_geometry(
                 output_file='stream_connectivity_cut.shp'
             )
         assert exc_info.value.args[0] == message['error_geometry']
+        # merge split segments in a stream network
+        with pytest.raises(Exception) as exc_info:
+            stream.connectivity_merge_of_split_segments(
+                input_file=point_file,
+                stream_col='flw_id',
+                output_file='stream_connectivity_cut_merged.shp',
+                json_file='stream_connectivity_cut_merged_information.json'
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
         # junction points
         with pytest.raises(Exception) as exc_info:
             stream.point_junctions(
@@ -275,6 +303,14 @@ def test_error_geometry(
             stream.point_main_outlets(
                 input_file=point_file,
                 output_file=os.path.join(tmp_dir, 'main_outlet_points.shp')
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
+        # headwater points
+        with pytest.raises(Exception) as exc_info:
+            stream.point_headwaters(
+                input_file=point_file,
+                stream_col='flw_id',
+                output_file=os.path.join(tmp_dir, 'headwater_points.shp')
             )
         assert exc_info.value.args[0] == message['error_geometry']
         # Strahler stream order
@@ -324,6 +360,15 @@ def test_error_shapefile_driver(
             output_file='stream_connectivity_cut.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # merge split segments in a stream network
+    with pytest.raises(Exception) as exc_info:
+        stream.connectivity_merge_of_split_segments(
+            input_file='stream.shp',
+            stream_col='flw_id',
+            output_file='stream_connectivity_cut_merged.sh',
+            json_file='stream_connectivity_cut_merged_information.json'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
     # junction points
     with pytest.raises(Exception) as exc_info:
         stream.point_junctions(
@@ -344,6 +389,14 @@ def test_error_shapefile_driver(
         stream.point_main_outlets(
             input_file='stream.shp',
             output_file='main_outlet_points.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # headwater points
+    with pytest.raises(Exception) as exc_info:
+        stream.point_headwaters(
+            input_file='stream.shp',
+            stream_col='flw_id',
+            output_file='headwater_points.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
     # Strahler stream order

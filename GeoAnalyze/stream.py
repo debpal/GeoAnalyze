@@ -108,7 +108,7 @@ class Stream:
         output = f'Flow segments: {len(gdf)}, upstream points: {upstream_points} after splitting MultiLineString(s), if present.'
         gdf = gdf.dissolve(by=[tmp_col]).reset_index(drop=True)
 
-        # saving GeoDataFrame
+        # saving output GeoDataFrame
         gdf.to_file(output_file)
 
         return output
@@ -188,7 +188,7 @@ class Stream:
             else:
                 downstream_link[dp_id] = unlinked_id
 
-        # saving updated stream GeoDataFrame with connected downstream segment identifiers
+        # saving output GeoDataFrame
         stream_gdf[link_col] = downstream_link.values()
         stream_gdf.to_file(output_file)
 
@@ -244,14 +244,10 @@ class Stream:
         # temporary directory
         with tempfile.TemporaryDirectory() as tmp_dir:
             # connectivity to downstream segment identifiers
-            self.connectivity_adjacent_downstream_segment(
+            stream_gdf = self.connectivity_adjacent_downstream_segment(
                 input_file=stream_file,
                 stream_col=stream_col,
                 output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
-            )
-            # read stream GeoDataFrame with downstream segment identifiers
-            stream_gdf = geopandas.read_file(
-                filename=os.path.join(tmp_dir, 'stream_downstream_id.shp')
             )
             # non headwater segments by exchanging stream and adjacent donwstream columns
             nhw_df = stream_gdf[['ds_id', stream_col]]
@@ -272,7 +268,7 @@ class Stream:
                 by=[stream_col, link_col],
                 ignore_index=True
             )
-            # saving adjacent upstream connectivity in CSV file
+            # saving adjacent upstream connectivity
             ul_df.to_csv(
                 path_or_buf=csv_file,
                 sep='\t',
@@ -322,14 +318,10 @@ class Stream:
         # temporary directory
         with tempfile.TemporaryDirectory() as tmp_dir:
             # connectivity to downstream segment identifiers
-            self.connectivity_adjacent_downstream_segment(
+            stream_gdf = self.connectivity_adjacent_downstream_segment(
                 input_file=stream_file,
                 stream_col=stream_col,
                 output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
-            )
-            # read stream GeoDataFrame with downstream segment identifiers
-            stream_gdf = geopandas.read_file(
-                filename=os.path.join(tmp_dir, 'stream_downstream_id.shp')
             )
             stream_df = stream_gdf[[stream_col, 'ds_id']]
             stream_link = dict(
@@ -347,7 +339,7 @@ class Stream:
                     else:
                         us2ds_link[fix_i].append(stream_link[i])
                         i = stream_link[i]
-            # saving upstream to downstream connectivity in json file
+            # saving upstream to downstream connectivity
             with open(json_file, 'w') as output_us2ds:
                 json.dump(us2ds_link, output_us2ds)
 
@@ -393,14 +385,10 @@ class Stream:
         # temporary directory
         with tempfile.TemporaryDirectory() as tmp_dir:
             # connectivity to downstream segment identifiers
-            self.connectivity_adjacent_downstream_segment(
+            stream_gdf = self.connectivity_adjacent_downstream_segment(
                 input_file=stream_file,
                 stream_col=stream_col,
                 output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
-            )
-            # read stream GeoDataFrame with downstream segment identifiers
-            stream_gdf = geopandas.read_file(
-                filename=os.path.join(tmp_dir, 'stream_downstream_id.shp')
             )
             stream_df = stream_gdf[[stream_col, 'ds_id']]
             stream_link = {
@@ -426,7 +414,7 @@ class Stream:
                         else:
                             ds2us_link[i].append(i_upstream)
                             i_connect = ds2us_link[i][-1]
-            # saving downstream to upstream connectivity in json file
+            # saving downstream to upstream connectivitye
             with open(json_file, 'w') as output_ds2us:
                 json.dump(ds2us_link, output_ds2us)
 
@@ -505,7 +493,7 @@ class Stream:
                 by=[stream_col, link_col],
                 ignore_index=True
             )
-            # saving adjacent upstream connectivity in CSV file
+            # saving adjacent upstream connectivity
             ul_df.to_csv(
                 path_or_buf=csv_file,
                 sep='\t',
@@ -588,6 +576,142 @@ class Stream:
 
         return stream_gdf
 
+    def connectivity_merge_of_split_segments(
+        self,
+        input_file: str,
+        stream_col: str,
+        output_file: str,
+        json_file: str
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Merges split segments in the stream network, if any, either between
+        two junction points or from a junction point upstream until a headwater occurs.
+        The merged segment is assigned the identifier of the most downstream segment
+        among those being merged.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input stream shapefile.
+
+        stream_col : str
+            Column name in the stream shapefile containing
+            a unique identifier for each stream segment.
+
+        output_file : str
+            Path to save the output stream shapefile
+            with updated downstream connectivity information.
+
+        json_file : str
+            Path to save the output JSON file representing the merge information
+            of stream segments. For example, {5: [4, 39, 38, 2]} indicates that
+            stream segment 5 is the result of merging segments 4, 39, 38, and 2,
+            which are consecutively connected from downstream to upstream until
+            a junction point is reached or no upstream segment exists.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame where each merged segment is represented by the most
+            downstream segment identifier, absorbing all connected upstream segments
+            either between junction points or from a junction point to a headwater.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check LineString geometry type
+        if 'LineString' not in Core().shapefile_geometry_type(input_file):
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
+        # temporary directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # connectivity to downstream segment identifiers
+            stream_gdf = self.connectivity_adjacent_downstream_segment(
+                input_file=input_file,
+                stream_col=stream_col,
+                output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
+            )
+            slm_gdf = stream_gdf[[stream_col, 'ds_id', 'geometry']]
+            stream_link = dict(
+                zip(slm_gdf[stream_col], slm_gdf['ds_id'])
+            )
+            # upstream link until either junction point or headwater occurs
+            upstream_link: dict[float, list[list[float]]] = {
+                i: list() for i in slm_gdf[stream_col]
+            }
+            for i in stream_link.keys():
+                if i not in stream_link.values():
+                    pass
+                else:
+                    i_connect = [i]
+                    while True:
+                        i_upstream = list(
+                            filter(
+                                lambda x: stream_link[x] in i_connect, stream_link
+                            )
+                        )
+                        if len(i_upstream) == 0:
+                            break
+                        elif len(i_upstream) > 1:
+                            break
+                        else:
+                            upstream_link[i].append(i_upstream)
+                            i_connect = upstream_link[i][-1]
+            # non-empty upstream link until either junction point or headwater occurs
+            jh_link = {
+                i: j for i, j in upstream_link.items() if len(j) > 0
+            }
+            # end segment identifiers until either junction point or headwater occurs
+            jh_ids = set([jh_link[i][-1][0] for i in jh_link])
+            # select most downstream segments for merged links
+            ds_link = {}
+            for i in jh_ids:
+                i_jh = list(
+                    filter(
+                        lambda x: jh_link[x][-1][0] == i, jh_link.keys()
+                    )
+                )
+                i_length = list(
+                    map(
+                        lambda x: len(jh_link[x]), i_jh
+                    )
+                )
+                i_select = i_jh[i_length.index(max(i_length))]
+                ds_link[i_select] = jh_link[i_select]
+            # dictionary of merged link
+            merged_link: dict[float, list[float]] = dict(
+                zip(
+                    ds_link.keys(), map(lambda x: [i[0] for i in ds_link[x]], ds_link.keys())
+                )
+            )
+            # saving merged information of split segments in json file
+            with open(json_file, 'w') as output_merged:
+                json.dump(merged_link, output_merged)
+
+            # saving output GeoDataFrame
+            slm_gdf = slm_gdf.drop(columns=['ds_id'])
+            reverse_merge = {
+                val: key for key, values in merged_link.items() for val in values
+            }
+            slm_gdf['m_id'] = slm_gdf[stream_col].apply(
+                lambda x: reverse_merge.get(x, x)
+            )
+            slm_gdf = slm_gdf.dissolve(by=['m_id']).reset_index()
+            slm_gdf['geometry'] = slm_gdf['geometry'].apply(
+                lambda x: shapely.line_merge(x)
+            )
+            slm_gdf = slm_gdf.drop(columns=[stream_col])
+            slm_gdf = slm_gdf.rename(
+                columns={'m_id': stream_col}
+            )
+            slm_gdf.to_file(output_file)
+
+        return slm_gdf
+
     def point_junctions(
         self,
         input_file: str,
@@ -651,7 +775,7 @@ class Stream:
         # get the segment identfiers of junction points
         junction_groups = junction_gdf.groupby('geometry')[stream_col].apply(lambda x: x.tolist())
 
-        # save the output GeoDataFrame
+        # saving output GeoDataFrame
         output_gdf = geopandas.GeoDataFrame(
             data={
                 junction_col: range(1, len(junction_groups) + 1),
@@ -721,7 +845,7 @@ class Stream:
         )
         pour_gdf = pour_gdf.drop(columns=['pour_coords', 'junction'])
 
-        # save the subbasin drainage point GeoDataFrame
+        # saving output GeoDataFrame
         pour_gdf.to_file(output_file)
 
         return pour_gdf
@@ -771,10 +895,63 @@ class Stream:
         outlet_gdf = downstream_gdf[downstream_gdf['geometry'].isin(outlet_points.tolist())]
         outlet_gdf = outlet_gdf.reset_index(drop=True)
 
-        # save the outlet point GeoDataFrame
+        # saving output GeoDataFrame
         outlet_gdf.to_file(output_file)
 
         return outlet_gdf
+
+    def point_headwaters(
+        self,
+        input_file: str,
+        stream_col: str,
+        output_file: str,
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Identifies headwater points in the stream network. A headwater point
+        is defined as the starting point of a stream segment with no upstream connections.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input stream shapefile.
+
+        output_file : str
+            Path to save the output shapefile containing identified headwater points.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing the geometries and attributes of headwater points.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check LineString geometry type
+        if 'LineString' not in Core().shapefile_geometry_type(input_file):
+            raise Exception('Input shapefile must have geometries of type LineString.')
+
+        # temporary directory
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # connectivity to downstream segment identifiers
+            stream_gdf = self.connectivity_adjacent_downstream_segment(
+                input_file=input_file,
+                stream_col=stream_col,
+                output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
+            )
+            # predict headwater segments
+            hw_ids = [
+                i for i in stream_gdf[stream_col] if i not in stream_gdf['ds_id'].tolist()
+            ]
+            hw_gdf = stream_gdf[stream_gdf[stream_col].isin(hw_ids)].reset_index(drop=True)
+            hw_gdf.geometry = hw_gdf.geometry.apply(lambda x: shapely.Point(x.coords[0]))
+            # saving output GeoDataFrame
+            hw_gdf.to_file(output_file)
+
+        return hw_gdf
 
     def order_strahler(
         self,
@@ -867,7 +1044,7 @@ class Stream:
             stream_gdf[order_col] = stream_gdf[stream_col].apply(
                 lambda x: strahler_order.get(x)
             )
-            # saving updated stream GeoDataFrame with Strahler order
+            # saving output GeoDataFrame
             stream_gdf.to_file(output_file)
 
         return stream_gdf
@@ -961,7 +1138,7 @@ class Stream:
             stream_gdf[order_col] = stream_gdf[stream_col].apply(
                 lambda x: shreve_order.get(x)
             )
-            # saving updated stream GeoDataFrame with Strahler order
+            # saving output GeoDataFrame
             stream_gdf.to_file(output_file)
 
         return stream_gdf
@@ -1039,7 +1216,7 @@ class Stream:
             if check_touch is True:
                 break
 
-        # saving box geodataframe
+        # saving output GeoDataFrame
         box_gdf = geopandas.GeoDataFrame(
             geometry=[rotate_box],
             crs=gdf.crs
@@ -1123,7 +1300,7 @@ class Stream:
                     origin=point
                 )
 
-        # saving box geodataframe
+        # saving output GeoDataFrame
         box_gdf = geopandas.GeoDataFrame(
             geometry=[box],
             crs=gdf.crs
@@ -1206,7 +1383,7 @@ class Stream:
                     origin=point
                 )
 
-        # saving box geodataframe
+        # saving output GeoDataFrame
         box_gdf = geopandas.GeoDataFrame(
             geometry=[box],
             crs=gdf.crs
