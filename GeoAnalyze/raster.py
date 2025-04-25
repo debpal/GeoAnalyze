@@ -17,6 +17,40 @@ class Raster:
     Provides functionality for raster file operations.
     '''
 
+    def get_statistics(
+        self,
+        raster_file: str
+    ) -> dict[str, float]:
+
+        '''
+        Computes basic statistics (minimum, maximum, and mean) for a raster array.
+
+        Parameters
+        ----------
+        raster_file : str
+            Path to the input raster file.
+
+        Returns
+        -------
+        dict
+            A dictionary where each key represents a statistical parameter,
+            and its corresponding value is the computed result.
+        '''
+
+        with rasterio.open(raster_file) as input_raster:
+            raster_array = input_raster.read(1)
+            valid_array = raster_array[raster_array != input_raster.nodata]
+            min_value = valid_array.min()
+            max_value = valid_array.max()
+            mean_value = valid_array.mean()
+            output = {
+                'Minimum': min_value,
+                'Maximum': max_value,
+                'Mean': mean_value
+            }
+
+        return output
+
     def count_data_cells(
         self,
         raster_file: str
@@ -528,6 +562,59 @@ class Raster:
             raster_array = input_raster.read(1).astype(dtype)
             raster_array[raster_array == raster_profile['nodata']] = nodata
             raster_profile['nodata'] = nodata
+            with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
+                output_raster.write(raster_array, 1)
+                output_profile = output_raster.profile
+
+        return output_profile
+
+    # pytest pending
+    def nodata_to_valid_value(
+        self,
+        input_file: str,
+        valid_value: float,
+        output_file: str,
+        dtype: typing.Optional[str] = None
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Converts NoData values in a raster to a specified valid value.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        valid_value : float
+            Value to replace NoData values in the output raster.
+            If this value is the same as the current NoData value,
+            the NoData will be set to None in the output.
+
+        output_file : str
+            Path to save the output raster file.
+
+        dtype : str, optional
+            Data type of the output raster.
+            If None, the data type of the input raster is retained.
+
+        Returns
+        -------
+        profile
+            A profile containing metadata about the output raster.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # saving raster after changing NoData value
+        with rasterio.open(input_file) as input_raster:
+            raster_profile = input_raster.profile
+            raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
+            raster_array = input_raster.read(1).astype(dtype)
+            raster_array[raster_array == raster_profile['nodata']] = valid_value
+            raster_profile['nodata'] = None if raster_profile['nodata'] == valid_value else raster_profile['nodata']
             with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
                 output_raster.write(raster_array, 1)
                 output_profile = output_raster.profile

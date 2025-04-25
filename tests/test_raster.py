@@ -87,6 +87,14 @@ def test_error_raster_file_driver(
             output_file='dem_NoData_0.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # raster NoData to valid value
+    with pytest.raises(Exception) as exc_info:
+        raster.nodata_to_valid_value(
+            input_file='dem.tif',
+            valid_value=0,
+            output_file='dem_NoData_0.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
     # raster NoData extent trimming
     with pytest.raises(Exception) as exc_info:
         raster.nodata_extent_trimming(

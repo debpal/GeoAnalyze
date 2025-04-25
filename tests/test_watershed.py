@@ -79,6 +79,13 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'dem.tif')
         )
         assert int(output_gdf['flwacc'].iloc[0]) == 8308974
+        # dem stattistics
+        dem_stats = GeoAnalyze.Raster().get_statistics(
+            raster_file=os.path.join(tmp_dir, 'dem.tif')
+        )
+        assert dem_stats['Minimum'].round(1) == 136.0
+        assert dem_stats['Maximum'].round(1) == 590.4
+        assert dem_stats['Mean'].round(1) == 281.5
         # raster boundary polygon GeoDataFrame
         output_gdf = raster.boundary_polygon(
             raster_file=os.path.join(tmp_dir, 'dem.tif'),
@@ -230,6 +237,13 @@ def test_functions(
             dtype='float32'
         )
         assert output_profile['nodata'] == 0
+        # raster NoData to valid value change
+        output_profile = raster.nodata_to_valid_value(
+            input_file=os.path.join(tmp_dir, 'stream_nodata_0.tif'),
+            valid_value=0,
+            output_file=os.path.join(tmp_dir, 'stream_nodata_to_valid.tif')
+        )
+        assert output_profile['nodata'] is None
         # raster file merging
         with tempfile.TemporaryDirectory() as tmp1_dir:
             # shape of subbasin 8 to raster
