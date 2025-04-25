@@ -154,12 +154,26 @@ To generate the boundary polygons of a raster, use the following code:
         raster_file=r"C:\users\username\folder\dem.tif",
         shape_file=r"C:\users\username\folder\dem_boundary.shp"
     )
-
-
-Counting Unique Raster Values
+    
+    
+Computing Raster Statistics
 --------------------------------
 
-To count the unique values in a raster, use the following code:
+To compute basic statistics from a raster file, use the following code:
+
+
+.. code-block:: python
+
+    # raster statistics
+    raster.get_statistics(
+        raster_file=r"C:\users\username\folder\landuse.tif"
+    )
+
+
+Counting Raster Values
+--------------------------------
+
+To count different types of values in a raster, use the following code:
 
 
 .. code-block:: python
@@ -167,7 +181,17 @@ To count the unique values in a raster, use the following code:
     # counting unique values
     raster.count_unique_values(
         raster_file=r"C:\users\username\folder\landuse.tif",
-        shape_file=r"C:\users\username\folder\landuse_count.csv"
+        csv_file=r"C:\users\username\folder\landuse_count.csv"
+    )
+    
+    # counting valid data cells
+    raster.count_data_cells(
+        raster_file=r"C:\users\username\folder\landuse.tif"
+    )
+    
+    # counting Nodata cells
+    raster.count_nodata_cells(
+        raster_file=r"C:\users\username\folder\landuse.tif"
     )
     
     
