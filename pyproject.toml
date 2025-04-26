@@ -14,7 +14,8 @@ dependencies = [
     "geopandas",
     "rasterio",
     "fiona",
-    "pyflwdir"
+    "pyflwdir",
+    "matplotlib"
 ]
 readme = "README.md"
 requires-python = ">=3.10"
