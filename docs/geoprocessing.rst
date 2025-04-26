@@ -17,6 +17,7 @@ To begin, instantiate the required classes as follows:
     packagedata = GeoAnalyze.PackageData()
     raster = GeoAnalyze.Raster()
     shape = GeoAnalyze.Shape()
+    visual = GeoAnalyze.Visual()
 
 
 Raster Array from a Shapefile 
@@ -323,4 +324,28 @@ Before filling, we perform column operations to assign and retain an ID for each
         input_file=lake_file,
         column_name='lid',
         output_file=r"C:\users\username\folder\lake_fill.shp"
+    )
+    
+    
+Qucik View of a Ratser 
+--------------------------
+
+To quickly view the input raster array without customization, use the following code:
+
+
+.. code-block:: python
+    
+    # raster quick view
+    visual.quickview_raster(
+        raster_file=r"C:\users\username\folder\input_raster.tif",
+        figure_file=r"C:\users\username\folder\output_figure.png",
+        gui_window=False
+    )
+
+    # raster quick view with color map in log scale
+    visual.quickview_raster(
+        raster_file=r"C:\users\username\folder\input_raster.tif",
+        figure_file=r"C:\users\username\folder\output_figure.png",
+        log_scale=True,
+        gui_window=False
     )
