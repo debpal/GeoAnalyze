@@ -88,6 +88,11 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
 - Performing column operations on a shapefile
 
 
+### *Visualization*
+
+- Quick view of a raster array
+
+
 
 ## File Operations (Irrespective of Extensions)
 
