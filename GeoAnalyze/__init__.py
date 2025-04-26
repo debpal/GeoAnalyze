@@ -4,6 +4,7 @@ from .shape import Shape
 from .raster import Raster
 from .stream import Stream
 from .watershed import Watershed
+from .visual import Visual
 
 
 __all__ = [
@@ -12,7 +13,8 @@ __all__ = [
     'Shape',
     'Raster',
     'Stream',
-    'Watershed'
+    'Watershed',
+    'Visual'
 ]
 
 
