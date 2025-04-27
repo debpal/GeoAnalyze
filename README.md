@@ -91,6 +91,7 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
 ### *Visualization*
 
 - Quick view of a raster array
+- Quick view of shapefile geometries
 
 
 
