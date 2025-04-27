@@ -327,10 +327,10 @@ Before filling, we perform column operations to assign and retain an ID for each
     )
     
     
-Qucik View of a Ratser 
---------------------------
+Quick Visualization of Geospatial Data 
+-----------------------------------------
 
-To quickly view the input raster array without customization, use the following code:
+To get a quick view of the input geospatial data without customization, use the following code:
 
 
 .. code-block:: python
@@ -348,4 +348,11 @@ To quickly view the input raster array without customization, use the following 
         figure_file=r"C:\users\username\folder\output_figure.png",
         log_scale=True,
         gui_window=False
+    )
+    
+    # shapefile column quick view
+    visual.quickview_geometry(
+        shape_file=r"C:\users\username\folder\input_shape.tif",
+        column_name='target_column'
+        figure_file=r"C:\users\username\folder\output_figure.png"
     )
