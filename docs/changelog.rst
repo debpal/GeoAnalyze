@@ -7,7 +7,10 @@ Version 1.2.0
 
 * **Release date:** To be released soon on the PyPI repository.
 
-* **Feature Additions:** New functions added to the :class:`GeoAnalyze.Stream` and :class:`GeoAnalyze.Raster` classes.
+* **Feature Additions:**
+
+    * Added new functions to the :class:`GeoAnalyze.Stream` and :class:`GeoAnalyze.Raster` classes.
+    * Introduced the new :class:`GeoAnalyze.Visual` class for geospatial data visualization and plotting..
 
 * **Documentation:** A tutorial has been added on how to use the newly introduced features.
 
