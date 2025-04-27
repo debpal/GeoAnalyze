@@ -63,7 +63,7 @@ class Shape:
     ) -> geopandas.GeoDataFrame:
 
         '''
-        Adds an ID column to the geometries,
+        Adds an identifier column to the geometries,
         starting from 1 and incrementing by 1.
 
         Parameters
@@ -72,7 +72,7 @@ class Shape:
             Path to the input shapefile.
 
         colums_name : str
-            Name of the ID column to be added.
+            Name of the identifier column to be added.
 
         output_file : str
             Path to save the output shapefile.
@@ -80,7 +80,7 @@ class Shape:
         Returns
         -------
         GeoDataFrame
-            A GeoDataFrame with an added ID column,
+            A GeoDataFrame with an added identifier column,
             where values start from 1 and increase by 1.
         '''
 
