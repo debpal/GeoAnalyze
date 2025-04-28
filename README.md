@@ -122,7 +122,8 @@ A brief example of how to start:
 
 ```python
 >>> import GeoAnalyze
->>> file = GeoAnalyze.Watershed()
+>>> watershed = GeoAnalyze.Watershed()
+>>> stream = GeoAnalyze.Stream()
 ```
 
 ## Documentation
