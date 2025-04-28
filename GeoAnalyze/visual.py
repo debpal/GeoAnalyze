@@ -94,16 +94,16 @@ class Visual:
             shrink=0.75
         )
 
-        # figure display
-        matplotlib.pyplot.show() if gui_window else None
-        matplotlib.pyplot.close(figure)
-
         # saving figure
         figure.tight_layout()
         figure.savefig(
             fname=figure_file,
             bbox_inches='tight'
         )
+
+        # figure display
+        matplotlib.pyplot.show() if gui_window else None
+        matplotlib.pyplot.close(figure)
 
         return figure
 
@@ -182,15 +182,15 @@ class Visual:
             legend_kwds={"shrink": 0.75}
         )
 
-        # figure display
-        matplotlib.pyplot.show() if gui_window else None
-        matplotlib.pyplot.close(figure)
-
         # saving figure
         figure.tight_layout()
         figure.savefig(
             fname=figure_file,
             bbox_inches='tight'
         )
+
+        # figure display
+        matplotlib.pyplot.show() if gui_window else None
+        matplotlib.pyplot.close(figure)
 
         return figure
