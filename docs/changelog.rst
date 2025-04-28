@@ -5,7 +5,7 @@ Release Notes
 Version 1.2.0
 ---------------
 
-* **Release date:** To be released soon on the PyPI repository.
+* **Release date:** 28-Apr-2025.
 
 * **Feature Additions:**
 
