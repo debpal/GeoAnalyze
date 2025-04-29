@@ -57,8 +57,10 @@ The `GeoAnalyze` package leverages the existing PyPI packages, such as, [rasteri
 [geopandas](https://github.com/geopandas/geopandas), and [shapely](https://github.com/shapely/shapely),
 to perform geoprocessing efficiently while reducing implementation complexity.
 Instead of requiring multiple lines of code to handle intermediate steps,
-the `GeoAnalyze.Raster` and `GeoAnalyze.Shape` classes streamline the process by automating these operations.
+the `GeoAnalyze.Raster` and `GeoAnalyze.Shape` classes streamline the process by automating these operations. 
+Furthermore, the `GeoAnalyze.Visual` class assists in raster and vector data plotting and visualization.
 This allows users to execute geoprocessing tasks more efficiently, reducing code length while ensuring accuracy and scalability.
+
 
 ### *Raster*
   
