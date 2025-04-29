@@ -56,6 +56,7 @@ The :mod:`GeoAnalyze` package leverages the existing PyPI packages, such as, `ra
 to perform geoprocessing efficiently while reducing implementation complexity.
 Instead of requiring multiple lines of code to handle intermediate steps,
 the :class:`GeoAnalyze.Raster` and :class:`GeoAnalyze.Shape` classes streamline the process by automating these operations.
+Furthermore, the :class:`GeoAnalyze.Visual` class assists in raster and vector data plotting and visualization.
 This allows users to execute geoprocessing tasks more efficiently, reducing code length while ensuring accuracy and scalability.
 
 
