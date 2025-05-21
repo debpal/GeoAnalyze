@@ -36,9 +36,7 @@ license-files = ["LICEN[CS]E.*"]
 keywords = [
     "Watershed",
     "Delineation",
-	"Geoprocessing",
-    "Raster",
-    "Shapefile"
+	"Geoprocessing"
 ]
 
 
