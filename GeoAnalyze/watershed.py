@@ -1,4 +1,5 @@
 import os
+import typing
 import time
 import json
 import pyflwdir
@@ -215,7 +216,7 @@ class Watershed:
         run_time = time.time()
 
         # summary dictionary
-        summary = {}
+        summary: dict[str, typing.Any] = {}
 
         # check validity of output folder path
         if os.path.isdir(folder_path) is False:
@@ -337,6 +338,7 @@ class Watershed:
         # maximum flow accumulation
         max_flwacc = int(flwacc_array[mask_array != 0].max())
         summary['Maximum flow accumulation'] = max_flwacc
+        summary['Flow accumulation threshold type and value'] = (tacc_type, tacc_value)
         threshold = int(max_flwacc * tacc_value / 100) if tacc_type == 'percentage' else tacc_value
         summary['Stream generation from threshold cells'] = threshold
         threshold_area = threshold * cell_area
@@ -425,6 +427,7 @@ class Watershed:
             features=subbasin_features,
             crs=dem_profile['crs']
         )
+        subbasin_gdf.geometry = subbasin_gdf.geometry.make_valid()
         subbasin_gdf = subbasin_gdf.sort_values(
             by=[flw_col],
             ascending=[True],

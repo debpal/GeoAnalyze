@@ -1,14 +1,9 @@
 import os
 import tempfile
 import shapely
+import geopandas
 import GeoAnalyze
 import pytest
-
-
-@pytest.fixture(scope='class')
-def packagedata():
-
-    yield GeoAnalyze.PackageData()
 
 
 @pytest.fixture(scope='class')
@@ -37,15 +32,23 @@ def point_gdf():
 
 
 def test_functions(
-    packagedata,
     stream
 ):
 
+    # data folder
+    data_folder = os.path.join(os.path.dirname(__file__), 'data')
+
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # accessing stream GeoDataFrame
+        # saving stream shapefile in temporary directory
+        transfer_list = GeoAnalyze.File().transfer_by_name(
+            src_folder=data_folder,
+            dst_folder=tmp_dir,
+            file_names=['stream']
+        )
+        assert 'stream.shp' in transfer_list
+        # read stream GeoDataFrame
         stream_file = os.path.join(tmp_dir, 'stream.shp')
-        stream_gdf = packagedata.geodataframe_stream
-        stream_gdf.to_file(stream_file)
+        stream_gdf = geopandas.read_file(stream_file)
         # checking flow path direction from upstream to downstream
         check_flwpath = stream.flw_path_us2ds_check(
             stream_file=stream_file

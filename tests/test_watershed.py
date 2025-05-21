@@ -5,12 +5,6 @@ import pytest
 
 
 @pytest.fixture(scope='class')
-def packagedata():
-
-    yield GeoAnalyze.PackageData()
-
-
-@pytest.fixture(scope='class')
 def raster():
 
     yield GeoAnalyze.Raster()
@@ -35,18 +29,23 @@ def message():
 
 
 def test_functions(
-    packagedata,
+    # packagedata,
     raster,
     watershed,
     message
 ):
 
+    # data folder
+    data_folder = os.path.join(os.path.dirname(__file__), 'data')
+
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # saving DEM raster file fo packaged data
-        output_profile = packagedata.raster_dem(
-            dem_file=os.path.join(tmp_dir, 'dem_extended.tif')
+        # saving extended DEM raster in temporary directory
+        transfer_list = GeoAnalyze.File().transfer_by_name(
+            src_folder=data_folder,
+            dst_folder=tmp_dir,
+            file_names=['dem_extended']
         )
-        assert output_profile['nodata'] is None
+        assert 'dem_extended.tif' in transfer_list
         # raster Coordinate Reference System reprojectoion
         output_profile = raster.crs_reprojection(
             input_file=os.path.join(tmp_dir, 'dem_extended.tif'),
@@ -80,12 +79,13 @@ def test_functions(
         )
         assert int(output_gdf['flwacc'].iloc[0]) == 8308974
         # dem stattistics
-        dem_stats = GeoAnalyze.Raster().get_statistics(
+        dem_stats = GeoAnalyze.Raster().statistics_summary(
             raster_file=os.path.join(tmp_dir, 'dem.tif')
         )
         assert dem_stats['Minimum'].round(1) == 136.0
         assert dem_stats['Maximum'].round(1) == 590.4
         assert dem_stats['Mean'].round(1) == 281.5
+        assert dem_stats['Standard deviation'].round(1) == 43.7
         # raster boundary polygon GeoDataFrame
         output_gdf = raster.boundary_polygon(
             raster_file=os.path.join(tmp_dir, 'dem.tif'),
@@ -160,10 +160,13 @@ def test_functions(
             csv_file=os.path.join(tmp_dir, 'slope_reclass.csv'),
         )
         assert len(count_df) == 5
-        # accessing stream GeoDataFrame
-        output_gdf = packagedata.geodataframe_stream
-        output_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
-        assert len(output_gdf) == 11
+        # saving stream shapefile in temporary directory
+        transfer_list = GeoAnalyze.File().transfer_by_name(
+            src_folder=data_folder,
+            dst_folder=tmp_dir,
+            file_names=['stream']
+        )
+        assert 'stream.shp' in transfer_list
         # raster array from geometries without filling mask region
         raster.array_from_geometries(
             shape_file=os.path.join(tmp_dir, 'stream.shp'),
@@ -189,6 +192,13 @@ def test_functions(
             remove_values=(0,)
         )
         assert output_gdf['Count'].sum() == 7436
+        # statistics summary by reference zone
+        stats_df = raster.statistics_summary_by_reference_zone(
+            value_file=os.path.join(tmp_dir, 'dem.tif'),
+            zone_file=os.path.join(tmp_dir, 'stream.tif'),
+            csv_file=os.path.join(tmp_dir, 'statistics_dem_by_stream.csv')
+        )
+        assert stats_df.shape == (11, 8)
         # raster reclassification by value mapping
         output_list = raster.reclassify_by_value_mapping(
             input_file=os.path.join(tmp_dir, 'stream.tif'),

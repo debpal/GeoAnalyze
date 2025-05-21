@@ -17,7 +17,7 @@ class Raster:
     Provides functionality for raster file operations.
     '''
 
-    def get_statistics(
+    def statistics_summary(
         self,
         raster_file: str
     ) -> dict[str, float]:
@@ -40,16 +40,88 @@ class Raster:
         with rasterio.open(raster_file) as input_raster:
             raster_array = input_raster.read(1)
             valid_array = raster_array[raster_array != input_raster.nodata]
-            min_value = valid_array.min()
-            max_value = valid_array.max()
-            mean_value = valid_array.mean()
             output = {
-                'Minimum': min_value,
-                'Maximum': max_value,
-                'Mean': mean_value
+                'Minimum': numpy.min(valid_array),
+                'Maximum': numpy.max(valid_array),
+                'Mean': numpy.mean(valid_array),
+                'Standard deviation': numpy.std(valid_array),
             }
 
         return output
+
+    # pytest pending
+    def statistics_summary_by_reference_zone(
+        self,
+        zone_file: str,
+        value_file: str,
+        csv_file: str
+    ) -> pandas.DataFrame:
+
+        '''
+        Calculates and returns summary statistics (minimum, maximum, mean, and standard deviation)
+        of values in a raster file, grouped by unique zones defined in a reference zone raster.
+
+        Parameters
+        ----------
+        zone_file : str
+            Path to the input zone raster file.
+
+        value_file : str
+            Path to the input value raster file.
+
+        csv_file : str
+            Path to the CSV file where the output DataFrame will be saved.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A DataFrame containing unique zone values and
+            their corresponding statistics calculated from the value raster.
+        '''
+
+        # zone raster parameter
+        with rasterio.open(zone_file) as input_zone:
+            zone_nodata = input_zone.nodata
+            zone_array = input_zone.read(1)
+            zone_values = numpy.unique(zone_array[zone_array != zone_nodata])
+
+        # value raster parameter
+        with rasterio.open(value_file) as input_value:
+            value_array = input_value.read(1)
+
+        # compute statistics
+        statistics_list = []
+        for i in zone_values:
+            i_value = value_array[zone_array == i]
+            statistics_list.append(
+                {
+                    'zone': i,
+                    'count': i_value.size,
+                    'min': numpy.min(i_value),
+                    'max': numpy.max(i_value),
+                    'mean': numpy.mean(i_value),
+                    'std': numpy.std(i_value),
+                }
+            )
+
+        # statistics DataFrame
+        df = pandas.DataFrame(
+            data=statistics_list
+        )
+        df = df.sort_values(
+            by=['zone'],
+            ignore_index=True
+        )
+        df['count(%)'] = 100 * df['count'] / df['count'].sum()
+        df['cumulative_count(%)'] = df['count(%)'].cumsum()
+
+        # saving DataFrame
+        df.to_csv(
+            path_or_buf=csv_file,
+            index_label='Index'
+        )
+
+        return df
 
     def count_data_cells(
         self,
@@ -158,8 +230,7 @@ class Raster:
             df['Cumulative_Count(%)'] = df['Count(%)'].cumsum()
             df.to_csv(
                 path_or_buf=csv_file,
-                index_label='Index',
-                float_format='%.2f'
+                index_label='Index'
             )
 
         return df
@@ -568,7 +639,6 @@ class Raster:
 
         return output_profile
 
-    # pytest pending
     def nodata_to_valid_value(
         self,
         input_file: str,

@@ -1,4 +1,3 @@
-from .packagedata import PackageData
 from .file import File
 from .shape import Shape
 from .raster import Raster
@@ -8,7 +7,6 @@ from .visual import Visual
 
 
 __all__ = [
-    'PackageData',
     'File',
     'Shape',
     'Raster',

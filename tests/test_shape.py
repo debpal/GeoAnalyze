@@ -6,12 +6,6 @@ import pytest
 
 
 @pytest.fixture(scope='class')
-def packagedata():
-
-    yield GeoAnalyze.PackageData()
-
-
-@pytest.fixture(scope='class')
 def shape():
 
     yield GeoAnalyze.Shape()
@@ -37,15 +31,23 @@ def message():
 
 
 def test_functions(
-    packagedata,
     shape
 ):
 
+    # data folder
+    data_folder = os.path.join(os.path.dirname(__file__), 'data')
+
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # accessing GeoDataFrame of lake
-        lake_gdf = packagedata.geodataframe_lake
+        # saving lake shapefile in temporary directory
+        transfer_list = GeoAnalyze.File().transfer_by_name(
+            src_folder=data_folder,
+            dst_folder=tmp_dir,
+            file_names=['lake']
+        )
+        assert 'lake.shp' in transfer_list
+        # read lake GeoDataFrame
         lake_file = os.path.join(tmp_dir, 'lake.shp')
-        lake_gdf.to_file(lake_file)
+        lake_gdf = geopandas.read_file(lake_file)
         # non-decimal whole value float columns to integer columns
         int_gdf = shape.column_nondecimal_float_to_int_type(
             input_file=lake_file,
@@ -82,6 +84,12 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'crs_reproject.shp')
         )
         assert str(reproject_gdf.crs) == 'EPSG:4326'
+        # rectangular bounding box
+        box_gdf = shape.boundary_box(
+            input_file=lake_file,
+            output_file=os.path.join(tmp_dir, 'box_lake.shp')
+        )
+        assert len(box_gdf) == 1
         # converting polygons to boundary lines
         shape.polygons_to_boundary_lines(
             input_file=lake_file,
@@ -131,11 +139,12 @@ def test_functions(
         )
         assert len(lakecutoff_gdf) == 10
         # pass test for extracting spatial join geometries
-        stream_gdf = packagedata.geodataframe_stream
-        stream_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
+        # stream_gdf = packagedata.geodataframe_stream
+        # stream_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
+        # stre_file = os.path.join(data_folder, 'lake_Oulanka.shp')
         extract_gdf = shape.extract_spatial_join_geometries(
             input_file=lake_file,
-            overlay_file=os.path.join(tmp_dir, 'stream.shp'),
+            overlay_file=os.path.join(data_folder, 'stream.shp'),
             output_file=os.path.join(tmp_dir, 'lake_extracted.shp')
         )
         assert len(extract_gdf) == 6
@@ -206,6 +215,13 @@ def test_error_shapefile_driver(
         shape.crs_reprojection(
             input_file='input.shp',
             target_crs='EPSG:3067',
+            output_file='output.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # rectangular bounding box
+    with pytest.raises(Exception) as exc_info:
+        shape.boundary_box(
+            input_file='input.shp',
             output_file='output.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']

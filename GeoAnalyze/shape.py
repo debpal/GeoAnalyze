@@ -235,6 +235,54 @@ class Shape:
 
         return gdf
 
+    # pytest pending
+    def boundary_box(
+        self,
+        input_file: str,
+        output_file: str
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Generate a rectangular bounding box from input geometries.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the shapefile containing input geometries.
+
+        output_file : str
+            Path to the output shapefile where the bounding box polygon will be saved.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing a single polygon representing the bounding box.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # input GeoDataFrame
+        gdf = geopandas.read_file(input_file)
+
+        # boundary box
+        box_boundary = shapely.box(*list(gdf.total_bounds))
+
+        # GeoDataFrame
+        box_gdf = geopandas.GeoDataFrame(
+            geometry=[box_boundary],
+            crs=gdf.crs
+        )
+        box_gdf.geometry = box_gdf.geometry.make_valid()
+        box_gdf['box_id'] = 1
+
+        # saving output GeoDataFrame
+        box_gdf.to_file(output_file)
+
+        return box_gdf
+
     def polygons_to_boundary_lines(
         self,
         input_file: str,

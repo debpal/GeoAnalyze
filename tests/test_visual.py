@@ -6,12 +6,6 @@ import pytest
 
 
 @pytest.fixture(scope='class')
-def packagedata():
-
-    yield GeoAnalyze.PackageData()
-
-
-@pytest.fixture(scope='class')
 def visual():
 
     yield GeoAnalyze.Visual()
@@ -28,20 +22,21 @@ def message():
 
 
 def test_functions(
-    packagedata,
     visual
 ):
 
+    # data folder
+    data_folder = os.path.join(os.path.dirname(__file__), 'data')
+
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # accessing stream shaepfile from GeoAanlyze package
-        packagedata.raster_dem(
-            dem_file=os.path.join(tmp_dir, 'dem_extended.tif')
+        # saving data files in temporary directory
+        transfer_list = GeoAnalyze.File().transfer_by_name(
+            src_folder=data_folder,
+            dst_folder=tmp_dir,
+            file_names=['dem_extended', 'stream']
         )
-        # accessing stream shaepfile from GeoAanlyze package
-        stream_gdf = packagedata.geodataframe_stream
-        stream_gdf.to_file(
-            os.path.join(tmp_dir, 'stream.shp')
-        )
+        assert 'dem_extended.tif' in transfer_list
+        assert 'stream.shp' in transfer_list
         # raster quick view
         output_figure = visual.quickview_raster(
             raster_file=os.path.join(tmp_dir, 'dem_extended.tif'),

@@ -3,12 +3,6 @@ import pytest
 
 
 @pytest.fixture(scope='class')
-def packagedata():
-
-    yield GeoAnalyze.PackageData()
-
-
-@pytest.fixture(scope='class')
 def raster():
 
     yield GeoAnalyze.Raster()
@@ -26,17 +20,10 @@ def message():
 
 
 def test_error_raster_file_driver(
-    packagedata,
     raster,
     message
 ):
 
-    # accessing DEM raster file
-    with pytest.raises(Exception) as exc_info:
-        packagedata.raster_dem(
-            dem_file='dem.tifff',
-        )
-    assert exc_info.value.args[0] == message['error_driver']
     # raster boundary polygon GeoDataFrame
     with pytest.raises(Exception) as exc_info:
         raster.boundary_polygon(
