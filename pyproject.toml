@@ -31,7 +31,7 @@ classifiers = [
 	"Topic :: Scientific/Engineering :: GIS",
 	"Topic :: Scientific/Engineering :: Hydrology"
 ]
-license = {text = "MIT"}
+license = "MIT"
 license-files = ["LICEN[CS]E.*"]
 keywords = [
     "Watershed",
