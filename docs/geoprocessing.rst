@@ -14,7 +14,6 @@ To begin, instantiate the required classes as follows:
 .. code-block:: python
 
     import GeoAnalyze
-    packagedata = GeoAnalyze.PackageData()
     raster = GeoAnalyze.Raster()
     shape = GeoAnalyze.Shape()
     visual = GeoAnalyze.Visual()
@@ -166,8 +165,24 @@ To compute basic statistics from a raster file, use the following code:
 .. code-block:: python
 
     # raster statistics
-    raster.get_statistics(
+    raster.statistics_summary(
         raster_file=r"C:\users\username\folder\landuse.tif"
+    )
+    
+    
+Computing Raster Statistics by Reference Zone
+-------------------------------------------------
+
+To compute summary statistics based on reference zones, use the following code:
+
+
+.. code-block:: python
+
+    # raster statistics by reference zone
+    output = raster.statistics_summary_by_reference_zone(
+        value_file=r"C:\users\username\folder\dem.tif",
+        zone_file=r"C:\users\username\folder\landuse.tif",
+        csv_file=r"C:\users\username\folder\statistics_dem_by_landuse.csv"
     )
 
 

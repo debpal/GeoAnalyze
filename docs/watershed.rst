@@ -17,7 +17,6 @@ To begin, instantiate the required classes as follows:
 .. code-block:: python
 
     import GeoAnalyze
-    packagedata = GeoAnalyze.PackageData()
     raster = GeoAnalyze.Raster()
     watershed = GeoAnalyze.Watershed()
     stream = GeoAnalyze.Stream()
@@ -32,16 +31,11 @@ When open-source DEMs are downloaded for a study area, they are typically provid
 To extract the basin area from the extended DEM, a main outlet point must be specified. However, the :class:`GeoAnalyze.Watershed` class can automatically delineate the basin
 by identifying the highest flow accumulation point as the main outlet. Before proceeding, the DEM must be converted to a projected CRS to ensure accurate hydrological computations.
 
-The following code retrieves the extended DEM using the :class:`GeoAnalyze.PackageData` class, converts it to a projected CRS,
-and extracts the corresponding basin area along with a clipped DEM.
+The following code converts the extended DEM to a projected Coordinate Reference System (CRS) and extracts the corresponding basin area, along with a clipped version of the DEM.
+The extended dem raster can be accessed from the `tests` directory of the the `GeoAnalyze  <https://github.com/debpal/GeoAnalyze/tree/main/tests>`_ package.
 
 
 .. code-block:: python
-
-    # accessing the extended DEM of Oulanka watershed in Finland
-    packagedata.raster_dem(
-        dem_file=r"C:\users\username\folder\dem_extended.tif"
-    )
     
     # converting geographic CRS to projected CRS 'EPSG:3067'
     raster.crs_reprojection(

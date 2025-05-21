@@ -2,12 +2,26 @@
 Release Notes
 ===============
 
+
+Version 1.2.1
+---------------
+
+* **Release date:** 21-May-2025.
+
+* **Features:**
+
+    * Added a new function to compute statistics by reference raster in the :class:`GeoAnalyze.Raster` class.
+    * Introduced a function to extract a rectangular bounding box from input geometries in the :class:`GeoAnalyze.Shape` class.
+    * Remove the :class:`GeoAnalyze.PackageData` class, as the required data can be accessed
+      from the `tests` directory of the the `GeoAnalyze  <https://github.com/debpal/GeoAnalyze/tree/main/tests>`_ package.
+
+
 Version 1.2.0
 ---------------
 
 * **Release date:** 28-Apr-2025.
 
-* **Feature Additions:**
+* **Features:**
 
     * Added new functions to the :class:`GeoAnalyze.Stream` and :class:`GeoAnalyze.Raster` classes.
     * Introduced the new :class:`GeoAnalyze.Visual` class for geospatial data visualization and plotting..
@@ -22,7 +36,7 @@ Version 1.1.0
 
 * **Release date:** 05-Apr-2025.
 
-* **Feature Additions:** New functions introduced in the :class:`GeoAnalyze.Raster` class.
+* **Features:** New functions introduced in the :class:`GeoAnalyze.Raster` class.
 
 * **Documentation:** Added a tutorial on how to use the newly introduced features.
 
@@ -34,7 +48,7 @@ Version 1.0.0
 
 * **Release date:** 10-Feb-2025.
 
-* **Feature Additions:**
+* **Features:**
 
     * Delineation functions implemented in the :class:`GeoAnalyze.Watershed` and :class:`GeoAnalyze.Stream` classes.
     * Geoprocessing capabilities introduced in the :class:`GeoAnalyze.Raster` and :class:`GeoAnalyze.Shape` classes.
