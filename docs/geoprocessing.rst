@@ -141,6 +141,7 @@ To extend a raster to match the spatial extent of a mask raster, use the followi
         output_file=r"C:\users\username\folder\input_extended.tif"
     )
 
+
 Generating Boundaries of a Raster
 -----------------------------------
 
@@ -210,7 +211,7 @@ To count different types of values in a raster, use the following code:
         raster_file=r"C:\users\username\folder\landuse.tif"
     )
     
-    
+
 Extracting Raster Values by Mask
 ----------------------------------------
 
@@ -226,7 +227,7 @@ To extract values from an input raster based on a mask raster, use the following
         output_file=r"C:\users\username\folder\flwdir_extract.tif"
     )
     
-    
+
 Merging Raster Files
 -----------------------
 
@@ -272,6 +273,7 @@ To generate the geometries for selected values in a raster, use the following co
         shapefile_file=r"C:\users\username\folder\subbasin.shp"
     )
 
+
 Aggregating Geometries 
 --------------------------
 
@@ -286,6 +288,20 @@ To aggregate geometries of a specified type from shapefiles in a folder, use the
         geometry_type='Polygon',
         column_name='pid',
         output_file=r"C:\users\username\folder\aggregate_polygons.shp"
+    )
+    
+
+Geometry Area by Target Column 
+--------------------------------
+
+To calculate the area of geometries grouped by the unique values in a specific column, use the following code:
+
+.. code-block:: python
+
+    shape.column_area_by_value(
+        shape_file=r"C:\users\username\folder\input.shp",
+        column_name='id',
+        csv_file=r"C:\users\username\folder\area.csv"
     )
 
 
@@ -341,7 +357,7 @@ Before filling, we perform column operations to assign and retain an ID for each
         output_file=r"C:\users\username\folder\lake_fill.shp"
     )
     
-    
+ 
 Quick Visualization of Geospatial Data 
 -----------------------------------------
 
