@@ -1,5 +1,7 @@
 import GeoAnalyze
 import pytest
+import tempfile
+import os
 
 
 @pytest.fixture(scope='class')
@@ -19,19 +21,169 @@ def message():
     return output
 
 
+def test_functions(
+    raster
+):
+
+    # data folder
+    data_folder = os.path.join(os.path.dirname(__file__), 'data')
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # saving stream shapefile in temporary directory
+        transfer_list = GeoAnalyze.File().transfer_by_name(
+            src_folder=data_folder,
+            dst_folder=tmp_dir,
+            file_names=['stream', 'dem_mask']
+        )
+        assert 'stream.shp' in transfer_list
+        # boundary polygon GeoDataFrame
+        output_gdf = raster.boundary_polygon(
+            raster_file=os.path.join(tmp_dir, 'dem_mask.tif'),
+            shape_file=os.path.join(tmp_dir, 'dem_mask_boundary.shp')
+        )
+        assert len(output_gdf) == 1
+        # raster array from geometries without filling mask region
+        output_profile = raster.array_from_geometries(
+            shape_file=os.path.join(tmp_dir, 'stream.shp'),
+            value_column='flw_id',
+            mask_file=os.path.join(tmp_dir, 'dem_mask.tif'),
+            output_file=os.path.join(tmp_dir, 'stream.tif'),
+            nodata=-9999,
+            dtype='int32',
+        )
+        assert output_profile['height'] == 3923
+        # count data cells
+        data_cell = raster.count_data_cells(
+            raster_file=os.path.join(tmp_dir, 'stream.tif')
+        )
+        assert data_cell == 12454
+        # count unique values
+        output_gdf = raster.count_unique_values(
+            raster_file=os.path.join(tmp_dir, 'stream.tif'),
+            csv_file=os.path.join(tmp_dir, 'stream_count_unique_values.csv')
+        )
+        assert output_gdf['Count'].sum() == 12454
+        # stattistics summary
+        raster_stats = GeoAnalyze.Raster().statistics_summary(
+            raster_file=os.path.join(tmp_dir, 'stream.tif')
+        )
+        assert raster_stats['Minimum'] == 1
+        assert raster_stats['Maximum'] == 11
+        # statistics summary by reference zone
+        stats_df = raster.statistics_summary_by_reference_zone(
+            value_file=os.path.join(tmp_dir, 'dem_mask.tif'),
+            zone_file=os.path.join(tmp_dir, 'stream.tif'),
+            csv_file=os.path.join(tmp_dir, 'statistics_dem_by_stream.csv')
+        )
+        assert stats_df.shape == (11, 8)
+        # raster reclassification by value mapping
+        output_list = raster.reclassify_by_value_mapping(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            reclass_map={(3, 4): 1},
+            output_file=os.path.join(tmp_dir, 'stream_reclass.tif')
+        )
+        assert 3 not in output_list
+        assert 4 not in output_list
+        # raster reclassification by constant value
+        output_list = raster.reclassify_by_constant_value(
+            input_file=os.path.join(tmp_dir, 'dem_mask.tif'),
+            constant_value=60,
+            output_file=os.path.join(tmp_dir, 'dem_mask_reclass_60.tif')
+        )
+        assert 60 in output_list
+        assert 282 not in output_list
+        # raster overlaid with geometries
+        output_list = raster.overlaid_with_geometries(
+            input_file=os.path.join(tmp_dir, 'dem_mask.tif'),
+            shape_file=os.path.join(tmp_dir, 'stream.shp'),
+            value_column='flw_id',
+            output_file=os.path.join(tmp_dir, 'stream_in_dem_mask.tif')
+        )
+        assert 1 in output_list
+        assert 5 in output_list
+        assert 6 in output_list
+        # raster array to geometries
+        output_gdf = raster.array_to_geometries(
+            raster_file=os.path.join(tmp_dir, 'stream.tif'),
+            select_values=[5, 6],
+            shape_file=os.path.join(tmp_dir, 'stream_polygon.shp')
+        )
+        len(output_gdf) == 2
+        # raster NoData conversion from value
+        raster.nodata_conversion_from_value(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            target_value=[1, 9],
+            output_file=os.path.join(tmp_dir, 'stream_value_to_NoData.tif')
+        )
+        nodata_cell = raster.count_nodata_cells(
+            raster_file=os.path.join(tmp_dir, 'stream_value_to_NoData.tif')
+        )
+        assert nodata_cell == 13921390
+        # raster NoData value change
+        output_profile = raster.nodata_value_change(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            nodata=0,
+            output_file=os.path.join(tmp_dir, 'stream_nodata_to_0.tif'),
+            dtype='float32'
+        )
+        assert output_profile['nodata'] == 0
+        # raster NoData to valid value change
+        output_profile = raster.nodata_to_valid_value(
+            input_file=os.path.join(tmp_dir, 'stream_nodata_to_0.tif'),
+            valid_value=0,
+            output_file=os.path.join(tmp_dir, 'stream_nodata_to_valid.tif')
+        )
+        assert output_profile['nodata'] is None
+        # raster NoData extent trimming
+        output_profile = raster.nodata_extent_trimming(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            output_file=os.path.join(tmp_dir, 'stream_nodata_trim.tif')
+        )
+        assert output_profile['width'] == 3155
+        assert output_profile['height'] == 3348
+        # removing Coordinate Reference System
+        output_profile = raster.crs_removal(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            output_file=os.path.join(tmp_dir, 'stream_no_crs.tif')
+        )
+        assert output_profile['crs'] is None
+        # assigning Coordinate Reference System
+        output_profile = raster.crs_assign(
+            input_file=os.path.join(tmp_dir, 'stream_no_crs.tif'),
+            crs_code=3067,
+            output_file=os.path.join(tmp_dir, 'stream_EPSG3067.tif')
+        )
+        assert str(output_profile['crs']) == 'EPSG:3067'
+        # raster driver conversion
+        output_profile = raster.driver_convert(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            target_driver='RST',
+            output_file=os.path.join(tmp_dir, 'stream.rst')
+        )
+        assert output_profile['driver'] == 'RST'
+        # raster value extraction by mask
+        output_list = raster.extract_value_by_mask(
+            input_file=os.path.join(tmp_dir, 'dem_mask_reclass_60.tif'),
+            mask_file=os.path.join(tmp_dir, 'stream.tif'),
+            output_file=os.path.join(tmp_dir, 'dem_mask_reclass_extract.tif'),
+            fill_value=0
+        )
+        assert output_list == [0, 60]
+
+
 def test_error_raster_file_driver(
     raster,
     message
 ):
 
-    # raster boundary polygon GeoDataFrame
+    # boundary polygon GeoDataFrame
     with pytest.raises(Exception) as exc_info:
         raster.boundary_polygon(
             raster_file='dem.tif',
             shape_file='dem_boundary.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster resolution rescaling
+    # resolution rescaling
     with pytest.raises(Exception) as exc_info:
         raster.resolution_rescaling(
             input_file='dem.tif',
@@ -40,7 +192,7 @@ def test_error_raster_file_driver(
             output_file='dem_32m.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster resolution rescaling with mask
+    # resolution rescaling with mask
     with pytest.raises(Exception) as exc_info:
         raster.resolution_rescaling_with_mask(
             input_file='dem_32m.tif',
@@ -49,7 +201,22 @@ def test_error_raster_file_driver(
             output_file='dem_16m.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster Coordinate Reference System reprojectoion
+    # removing Coordinate Reference System
+    with pytest.raises(Exception) as exc_info:
+        raster.crs_removal(
+            input_file='stream.tif',
+            output_file='stream_no_crs.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # assigning Coordinate Reference System
+    with pytest.raises(Exception) as exc_info:
+        raster.crs_assign(
+            input_file='stream_no_crs.tif',
+            crs_code=3067,
+            output_file='stream_EPSG3067.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # reprojecting Coordinate Reference System
     with pytest.raises(Exception) as exc_info:
         raster.crs_reprojection(
             input_file='dem.tif',
@@ -58,7 +225,7 @@ def test_error_raster_file_driver(
             output_file='dem_EPSG4326.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster NoData conversion from value
+    # NoData conversion from value
     with pytest.raises(Exception) as exc_info:
         raster.nodata_conversion_from_value(
             input_file='stream.tif',
@@ -66,7 +233,7 @@ def test_error_raster_file_driver(
             output_file='stream_NoData.tifff',
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster NoData value change
+    # NoData value change
     with pytest.raises(Exception) as exc_info:
         raster.nodata_value_change(
             input_file='dem.tif',
@@ -74,7 +241,7 @@ def test_error_raster_file_driver(
             output_file='dem_NoData_0.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster NoData to valid value
+    # NoData to valid value
     with pytest.raises(Exception) as exc_info:
         raster.nodata_to_valid_value(
             input_file='dem.tif',
@@ -82,7 +249,7 @@ def test_error_raster_file_driver(
             output_file='dem_NoData_0.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster NoData extent trimming
+    # NoData extent trimming
     with pytest.raises(Exception) as exc_info:
         raster.nodata_extent_trimming(
             input_file='subbasin_merge.tif',
@@ -97,7 +264,7 @@ def test_error_raster_file_driver(
             output_file='dem_clipped.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # raster array from geometries
+    # array from geometries
     with pytest.raises(Exception) as exc_info:
         raster.array_from_geometries(
             shape_file='stream.shp',

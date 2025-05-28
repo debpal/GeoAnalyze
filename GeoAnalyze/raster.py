@@ -49,7 +49,6 @@ class Raster:
 
         return output
 
-    # pytest pending
     def statistics_summary_by_reference_zone(
         self,
         zone_file: str,
@@ -281,6 +280,7 @@ class Raster:
                 features=boundary_features,
                 crs=input_raster.crs
             )
+            gdf.geometry = gdf.geometry.make_valid()
             gdf['bid'] = range(1, gdf.shape[0] + 1)
             gdf = gdf[['bid', 'geometry']]
             gdf.to_file(shape_file)
@@ -451,6 +451,105 @@ class Raster:
                         resampling=resampling_dict[resampling_method]
                     )
                     output_profile = output_raster.profile
+
+        return output_profile
+
+    def crs_removal(
+        self,
+        input_file: str,
+        output_file: str
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Removes the Coordinate Reference System (CRS) from a raster file.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        output_file : str
+            Path to the output raster file with CRS removed.
+
+        Returns
+        -------
+        profile
+            A profile containing metadata about the output raster.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # open the input raster
+        with rasterio.open(input_file) as input_raster:
+            raster_array = input_raster.read(1)
+            raster_profile = input_raster.profile
+
+        # Write to new raster file
+        raster_profile['crs'] = None
+        with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
+            output_raster.write(raster_array, 1)
+            output_profile = output_raster.profile
+
+        return output_profile
+
+    def crs_assign(
+        self,
+        input_file: str,
+        crs_code: int,
+        output_file: str,
+        driver: str | None = None
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Assigns a projected Coordinate Reference System (CRS) to a raster file that lacks one.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        crs_code : int
+            EPSG code of the projected CRS to assign (e.g., 32638).
+
+        output_file : str
+            Path to save the projected raster file.
+
+        driver : str, optional
+            GDAL driver to use for the output file (e.g., 'GTiff').
+            If None, the driver of the input raster is used.
+
+        Returns
+        -------
+        profile
+            A profile containing metadata about the output raster.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # open the input raster
+        with rasterio.open(input_file) as input_raster:
+            raster_array = input_raster.read(1)
+            raster_profile = input_raster.profile
+
+        # update profile with new CRS
+        driver = raster_profile['driver'] if driver is None else driver
+        raster_profile.update(
+            {
+                'crs': rasterio.crs.CRS.from_epsg(crs_code),
+                'driver': driver
+            }
+        )
+
+        # Write to new raster file
+        with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
+            output_raster.write(raster_array, 1)
+            output_profile = output_raster.profile
 
         return output_profile
 
@@ -879,18 +978,17 @@ class Raster:
             mask_array = mask_raster.read(1) != mask_profile['nodata']
             mask_profile['dtype'] = mask_profile['dtype'] if dtype is None else dtype
             mask_profile['nodata'] = mask_profile['nodata'] if nodata is None else nodata
+            fill_value = mask_profile['nodata'] if fill_value is None else fill_value
             output_array = rasterio.features.rasterize(
                 shapes=zip(gdf.geometry, gdf[value_column]),
                 out_shape=mask_raster.shape,
                 transform=mask_raster.transform,
                 all_touched=all_touched,
-                fill=mask_profile['nodata'],
+                fill=fill_value,
                 dtype=mask_profile['dtype']
             )
-            # replace empty region by given value
-            if fill_value is not None:
-                output_array[mask_array & (output_array == mask_profile['nodata'])] = fill_value
             # saving output raster
+            output_array[~mask_array] = mask_profile['nodata']
             with rasterio.open(output_file, mode='w', **mask_profile) as output_raster:
                 output_raster.write(output_array, 1)
                 output_profile = output_raster.profile
@@ -1192,7 +1290,7 @@ class Raster:
 
         select_values : tuple
             A tuple of selected raster values. All raster values
-            will be selected if the input list is empty.
+            will be selected if the input tuple is empty.
 
         shape_file : str
             Path to save the output shapefile.
@@ -1469,16 +1567,13 @@ class Raster:
                     test_elements=test_elements,
                     invert=True
                 )
-                output_array = numpy.where(true_array, raster_array, raster_nodata)
                 # replace empty region by fill value
-                if fill_value is not None:
-                    output_array[
-                        (mask_array != mask_raster.nodata) & (output_array == raster_nodata)
-                    ] = fill_value
+                fill_value = raster_nodata if fill_value is None else fill_value
+                output_array = numpy.where(true_array, raster_array, fill_value)
                 # saving output raster
                 raster_profile['nodata'] = raster_profile['nodata'] if nodata is None else nodata
-                output_array[output_array == raster_nodata] = raster_profile['nodata']
-                raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
+                output_array[raster_array == raster_nodata] = raster_profile['nodata']
+                # raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
                 with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
                     output_raster.write(output_array, 1)
                     output = list(numpy.unique(output_array[output_array != output_raster.nodata]))

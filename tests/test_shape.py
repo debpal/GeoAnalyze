@@ -1,6 +1,7 @@
 import os
 import tempfile
 import geopandas
+import shapely
 import GeoAnalyze
 import pytest
 
@@ -66,17 +67,41 @@ def test_functions(
         assert 'nimi' in lake_gdf.columns
         delete_gdf = shape.column_delete(
             input_file=lake_file,
-            delete_cols=['nimi'],
+            column_list=['nimi'],
             output_file=lake_file
         )
         assert 'nimi' not in delete_gdf.columns
         # retaining columns
         retain_gdf = shape.column_retain(
             input_file=lake_file,
-            retain_cols=['lid'],
+            column_list=['lid'],
             output_file=lake_file
         )
         assert list(retain_gdf.columns) == ['lid', 'geometry']
+        # unique value of columns
+        cuv_dict = shape.column_unique_values(
+            shape_file=lake_file
+        )
+        assert len(cuv_dict) == 1
+        assert len(cuv_dict['lid']) == 190
+        # new column value mapping
+        ncvm_gdf = shape.column_add_mapped_values(
+            input_file=lake_file,
+            column_exist='lid',
+            column_new='nid',
+            mapping_value={
+                x: 1 if x % 3 == 1 else 2 if x % 3 == 2 else 0 for x in range(1, 191)
+            },
+            output_file=os.path.join(tmp_dir, 'lake_nid.shp')
+        )
+        assert 'nid' in ncvm_gdf.columns
+        # area by column unique values
+        cuva_gdf = shape.column_area_by_value(
+            shape_file=os.path.join(tmp_dir, 'lake_nid.shp'),
+            column_name='nid',
+            csv_file=os.path.join(tmp_dir, 'lake_nid.csv')
+        )
+        assert len(cuva_gdf) == 3
         # Coordinate Reference System reprojection
         reproject_gdf = shape.crs_reprojection(
             input_file=lake_file,
@@ -139,9 +164,6 @@ def test_functions(
         )
         assert len(lakecutoff_gdf) == 10
         # pass test for extracting spatial join geometries
-        # stream_gdf = packagedata.geodataframe_stream
-        # stream_gdf.to_file(os.path.join(tmp_dir, 'stream.shp'))
-        # stre_file = os.path.join(data_folder, 'lake_Oulanka.shp')
         extract_gdf = shape.extract_spatial_join_geometries(
             input_file=lake_file,
             overlay_file=os.path.join(data_folder, 'stream.shp'),
@@ -154,7 +176,7 @@ def test_functions(
             lake1_gdf.to_file(os.path.join(tmp2_dir, 'lake_1.shp'))
             lake2_gdf = lake_gdf.iloc[-50:, :]
             lake2_gdf.to_file(os.path.join(tmp2_dir, 'lake_2.shp'))
-            aggregate_gdf = shape.aggregate_geometries(
+            aggregate_gdf = shape.aggregate_geometries_from_shapefiles(
                 folder_path=tmp2_dir,
                 geometry_type='Polygon',
                 column_name='aid',
@@ -165,13 +187,109 @@ def test_functions(
             lake2_gdf = lake2_gdf.set_crs('EPSG:4326', allow_override=True)
             lake2_gdf.to_file(os.path.join(tmp2_dir, 'lake_2.shp'))
             with pytest.raises(Exception) as exc_info:
-                shape.aggregate_geometries(
+                shape.aggregate_geometries_from_shapefiles(
                     folder_path=tmp2_dir,
                     geometry_type='Polygon',
                     column_name='aid',
                     output_file=os.path.join(tmp_dir, 'aggregate.shp')
                 )
             assert exc_info.value.args[0] == 'Not all shapefiles have the same Coordinate Reference System.'
+
+
+def test_aggregate_geometries_from_layers(
+    shape
+):
+
+    # create GeoDataFrame of points for layer 1
+    l1p_gdf = geopandas.GeoDataFrame(
+        {
+            'id': [1, 2],
+            'geometry': [
+                shapely.Point(102, 0.5),
+                shapely.Point(103, 1.0)
+            ]
+        },
+        crs='EPSG:4326'
+    )
+
+    # create GeoDataFrame of points for layer 2
+    l2p_gdf = geopandas.GeoDataFrame(
+        {
+            'id': [1, 2],
+            'geometry': [
+                shapely.Point(104, 0.5),
+                shapely.Point(105, 1.0)
+            ]
+        },
+        crs='EPSG:4326'
+    )
+
+    # create GeoDataFrame of lines for layer 3
+    l3ls_gdf = geopandas.GeoDataFrame(
+        {
+            'id': [1, 2],
+            'geometry': [
+                shapely.LineString([(100, 0), (101, 1)]),
+                shapely.LineString([(101, 1), (102, 2)])
+            ]
+        },
+        crs='EPSG:4326'
+    )
+
+    # create GeoDataFrame of lines for layer 4
+    l4ls_gdf = geopandas.GeoDataFrame(
+        {
+            'id': [1, 2],
+            'geometry': [
+                shapely.LineString([(102, 2), (103, 3)]),
+                shapely.LineString([(103, 3), (104, 4)])
+            ]
+        },
+        crs='EPSG:4326'
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # saving layers to a GPKG file in temporary directory
+        gpkg_file = os.path.join(tmp_dir, 'tmp.gpkg')
+        l1p_gdf.to_file(gpkg_file, layer='l1_p')
+        l2p_gdf.to_file(gpkg_file, layer='l2_p')
+        l3ls_gdf.to_file(gpkg_file, layer='l3_ls')
+        l4ls_gdf.to_file(gpkg_file, layer='l4_ls')
+        # extracting line layers
+        line_gdf = shape.aggregate_geometries_from_layers(
+            input_file=gpkg_file,
+            geometry_type='LineString',
+            output_file=os.path.join(tmp_dir, 'layer_lines.shp'),
+            column_list=['id']
+        )
+        assert line_gdf.shape == (4, 3)
+        # error for geometry column
+        with pytest.raises(Exception) as exc_info:
+            shape.aggregate_geometries_from_layers(
+                input_file=gpkg_file,
+                geometry_type='LineString',
+                output_file=os.path.join(tmp_dir, 'layer_lines.shp'),
+                column_list=['id', 'geometry']
+            )
+        assert exc_info.value.args[0] == 'The column name "geometry" cannot be included in the column_list.'
+        # error for layer column
+        with pytest.raises(Exception) as exc_info:
+            shape.aggregate_geometries_from_layers(
+                input_file=gpkg_file,
+                geometry_type='LineString',
+                output_file=os.path.join(tmp_dir, 'layer_lines.shp'),
+                column_list=['id', 'layer']
+            )
+        assert exc_info.value.args[0] == 'To include "layer" in column_list, the name of the optional variable layer_column must be changed.'
+        # error for geometry type
+        with pytest.raises(Exception) as exc_info:
+            shape.aggregate_geometries_from_layers(
+                input_file=gpkg_file,
+                geometry_type='Line',
+                output_file=os.path.join(tmp_dir, 'layer_lines.shp'),
+                column_list=['id']
+            )
+        assert exc_info.value.args[0] == "Input geometry type must be one of ['Point', 'LineString', 'Polygon']."
 
 
 def test_error_shapefile_driver(
@@ -190,7 +308,7 @@ def test_error_shapefile_driver(
     with pytest.raises(Exception) as exc_info:
         shape.column_retain(
             input_file='input.shp',
-            retain_cols=['C1'],
+            column_list=['C1'],
             output_file='output.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
@@ -198,7 +316,7 @@ def test_error_shapefile_driver(
     with pytest.raises(Exception) as exc_info:
         shape.column_delete(
             input_file='input.shp',
-            delete_cols=['C1'],
+            column_list=['C1'],
             output_file='output.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
@@ -207,6 +325,18 @@ def test_error_shapefile_driver(
         shape.column_add_for_id(
             input_file='input.shp',
             column_name=['C1'],
+            output_file='output.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # new column value mapping
+    with pytest.raises(Exception) as exc_info:
+        shape.column_add_mapped_values(
+            input_file='input.shp',
+            column_exist='lid',
+            column_new='nid',
+            mapping_value={
+                x: 1 if x % 3 == 1 else 2 if x % 3 == 2 else 0 for x in range(1, 191)
+            },
             output_file='output.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
@@ -263,12 +393,20 @@ def test_error_shapefile_driver(
             output_file='output.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
-    # aggregating geometries
+    # aggregating geometries from shapefiles
     with pytest.raises(Exception) as exc_info:
-        shape.aggregate_geometries(
+        shape.aggregate_geometries_from_shapefiles(
             folder_path='input_folder',
             geometry_type='Polygon',
             column_name='aid',
+            output_file='output.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # aggregating geometries from layers
+    with pytest.raises(Exception) as exc_info:
+        shape.aggregate_geometries_from_layers(
+            input_file='input_file.gpkg',
+            geometry_type='LineString',
             output_file='output.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
@@ -284,6 +422,14 @@ def test_error_geometry(
         # saving point GeoDataFrame
         point_file = os.path.join(tmp_dir, 'point.shp')
         point_gdf.to_file(point_file)
+        # area by column unique values
+        with pytest.raises(Exception) as exc_info:
+            shape.column_area_by_value(
+                shape_file=point_file,
+                column_name='nid',
+                csv_file='lake_nid.csv'
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
         # polygon filling
         with pytest.raises(Exception) as exc_info:
             shape.polygon_fill(

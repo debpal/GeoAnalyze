@@ -29,7 +29,6 @@ def message():
 
 
 def test_functions(
-    # packagedata,
     raster,
     watershed,
     message
@@ -78,20 +77,6 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'dem.tif')
         )
         assert int(output_gdf['flwacc'].iloc[0]) == 8308974
-        # dem stattistics
-        dem_stats = GeoAnalyze.Raster().statistics_summary(
-            raster_file=os.path.join(tmp_dir, 'dem.tif')
-        )
-        assert dem_stats['Minimum'].round(1) == 136.0
-        assert dem_stats['Maximum'].round(1) == 590.4
-        assert dem_stats['Mean'].round(1) == 281.5
-        assert dem_stats['Standard deviation'].round(1) == 43.7
-        # raster boundary polygon GeoDataFrame
-        output_gdf = raster.boundary_polygon(
-            raster_file=os.path.join(tmp_dir, 'dem.tif'),
-            shape_file=os.path.join(tmp_dir, 'dem_boundary.shp')
-        )
-        assert len(output_gdf) == 1
         # dem delineation by single function
         output = watershed.dem_delineation(
             dem_file=os.path.join(tmp_dir, 'dem.tif'),
@@ -154,106 +139,6 @@ def test_functions(
             reclass_file=os.path.join(tmp_dir, 'slope_reclass.tif')
         )
         assert isinstance(output, str)
-        # raster unique values
-        count_df = raster.count_unique_values(
-            raster_file=os.path.join(tmp_dir, 'slope_reclass.tif'),
-            csv_file=os.path.join(tmp_dir, 'slope_reclass.csv'),
-        )
-        assert len(count_df) == 5
-        # saving stream shapefile in temporary directory
-        transfer_list = GeoAnalyze.File().transfer_by_name(
-            src_folder=data_folder,
-            dst_folder=tmp_dir,
-            file_names=['stream']
-        )
-        assert 'stream.shp' in transfer_list
-        # raster array from geometries without filling mask region
-        raster.array_from_geometries(
-            shape_file=os.path.join(tmp_dir, 'stream.shp'),
-            value_column='flw_id',
-            mask_file=os.path.join(tmp_dir, 'dem.tif'),
-            output_file=os.path.join(tmp_dir, 'stream.tif'),
-            nodata=-9999,
-            dtype='int32',
-        )
-        assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'stream.tif')) == 12454
-        raster.array_from_geometries(
-            shape_file=os.path.join(tmp_dir, 'stream.shp'),
-            value_column='flw_id',
-            mask_file=os.path.join(tmp_dir, 'dem.tif'),
-            output_file=os.path.join(tmp_dir, 'stream_1234.tif'),
-            select_values=[1, 2, 3, 4],
-            fill_value=0,
-            dtype='int16'
-        )
-        output_gdf = raster.count_unique_values(
-            raster_file=os.path.join(tmp_dir, 'stream_1234.tif'),
-            csv_file=os.path.join(tmp_dir, 'stream_1234.csv'),
-            remove_values=(0,)
-        )
-        assert output_gdf['Count'].sum() == 7436
-        # statistics summary by reference zone
-        stats_df = raster.statistics_summary_by_reference_zone(
-            value_file=os.path.join(tmp_dir, 'dem.tif'),
-            zone_file=os.path.join(tmp_dir, 'stream.tif'),
-            csv_file=os.path.join(tmp_dir, 'statistics_dem_by_stream.csv')
-        )
-        assert stats_df.shape == (11, 8)
-        # raster reclassification by value mapping
-        output_list = raster.reclassify_by_value_mapping(
-            input_file=os.path.join(tmp_dir, 'stream.tif'),
-            reclass_map={(3, 4): 1},
-            output_file=os.path.join(tmp_dir, 'stream_reclass.tif')
-        )
-        assert 3 not in output_list
-        assert 4 not in output_list
-        # raster reclassification by constant value
-        output_list = raster.reclassify_by_constant_value(
-            input_file=os.path.join(tmp_dir, 'dem.tif'),
-            constant_value=60,
-            output_file=os.path.join(tmp_dir, 'dem_reclass.tif')
-        )
-        assert 60 in output_list
-        assert 100 not in output_list
-        # raster overlaid with geometries
-        output_list = raster.overlaid_with_geometries(
-            input_file=os.path.join(tmp_dir, 'dem_reclass.tif'),
-            shape_file=os.path.join(tmp_dir, 'stream_lines.shp'),
-            value_column='flw_id',
-            output_file=os.path.join(tmp_dir, 'pasting_stream_in_dem_reclass.tif')
-        )
-        assert 1 in output_list
-        assert 5 in output_list
-        assert 6 in output_list
-        # raster array to geometries
-        output_gdf = raster.array_to_geometries(
-            raster_file=os.path.join(tmp_dir, 'stream.tif'),
-            select_values=[5, 6],
-            shape_file=os.path.join(tmp_dir, 'stream_polygon.shp')
-        )
-        len(output_gdf) == 2
-        # raster NoData conversion from value
-        raster.nodata_conversion_from_value(
-            input_file=os.path.join(tmp_dir, 'stream.tif'),
-            target_value=[1, 9],
-            output_file=os.path.join(tmp_dir, 'stream_NoData.tif')
-        )
-        assert raster.count_nodata_cells(raster_file=os.path.join(tmp_dir, 'stream_NoData.tif')) == 13921390
-        # raster NoData value change
-        output_profile = raster.nodata_value_change(
-            input_file=os.path.join(tmp_dir, 'stream.tif'),
-            nodata=0,
-            output_file=os.path.join(tmp_dir, 'stream_nodata_0.tif'),
-            dtype='float32'
-        )
-        assert output_profile['nodata'] == 0
-        # raster NoData to valid value change
-        output_profile = raster.nodata_to_valid_value(
-            input_file=os.path.join(tmp_dir, 'stream_nodata_0.tif'),
-            valid_value=0,
-            output_file=os.path.join(tmp_dir, 'stream_nodata_to_valid.tif')
-        )
-        assert output_profile['nodata'] is None
         # raster file merging
         with tempfile.TemporaryDirectory() as tmp1_dir:
             # shape of subbasin 8 to raster
@@ -280,13 +165,6 @@ def test_functions(
                 raster_file=os.path.join(tmp_dir, 'subbasin_merge.tif')
             )
             assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'subbasin_merge.tif')) == 519602
-        # raster NoData extent trimming
-        output_profile = raster.nodata_extent_trimming(
-            input_file=os.path.join(tmp_dir, 'subbasin_merge.tif'),
-            output_file=os.path.join(tmp_dir, 'subbasin_merge_remove_nodata.tif')
-        )
-        assert output_profile['width'] == 1173
-        assert output_profile['height'] == 844
         # raster value reclassification outside boundary area
         raster.array_from_geometries(
             shape_file=os.path.join(tmp_dir, 'subbasins.shp'),
@@ -312,21 +190,6 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'subbasin_merge_extended.tif')
         )
         assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'subbasin_merge_extended.tif')) == 8308974
-        # raster value extraction by mask
-        output_list = raster.extract_value_by_mask(
-            input_file=os.path.join(tmp_dir, 'flwdir.tif'),
-            mask_file=os.path.join(tmp_dir, 'stream.tif'),
-            output_file=os.path.join(tmp_dir, 'flwdir_extract.tif'),
-            fill_value=0
-        )
-        assert all([i in output_list for i in [0, 1, 2, 4, 8, 16, 32, 64, 128]])
-        # raster driver conversion
-        output_profile = raster.driver_convert(
-            input_file=os.path.join(tmp_dir, 'flwdir.tif'),
-            target_driver='RST',
-            output_file=os.path.join(tmp_dir, 'flwdir.rst')
-        )
-        assert output_profile['driver'] == 'RST'
 
 
 def test_error_invalid_folder_path(

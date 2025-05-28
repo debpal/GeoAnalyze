@@ -1,6 +1,9 @@
-import os
 import geopandas
 import shapely
+import pandas
+import pyogrio
+import os
+import typing
 from .core import Core
 from .file import File
 
@@ -103,7 +106,7 @@ class Shape:
     def column_delete(
         self,
         input_file: str,
-        delete_cols: list[str],
+        column_list: list[str],
         output_file: str
     ) -> geopandas.GeoDataFrame:
 
@@ -116,7 +119,7 @@ class Shape:
         input_file : str
             Path to the input shapefile.
 
-        delete_cols : list
+        column_list : list
             List of columns, apart from 'geometry', to delete in the output shapefile.
 
         output_file : str
@@ -137,8 +140,8 @@ class Shape:
         gdf = geopandas.read_file(input_file)
 
         # list of columns to drop
-        delete_cols.remove('geometry') if 'geometry' in delete_cols else delete_cols
-        gdf = gdf.drop(columns=delete_cols)
+        column_list.remove('geometry') if 'geometry' in column_list else column_list
+        gdf = gdf.drop(columns=column_list)
 
         # saving output GeoDataFrame
         gdf.to_file(output_file)
@@ -148,7 +151,7 @@ class Shape:
     def column_retain(
         self,
         input_file: str,
-        retain_cols: list[str],
+        column_list: list[str],
         output_file: str
     ) -> geopandas.GeoDataFrame:
 
@@ -162,7 +165,7 @@ class Shape:
         input_file : str
             Path to the input shapefile.
 
-        retain_cols : list
+        column_list : list
             List of columns, apart from 'geometry', to include in the output shapefile.
 
         output_file : str
@@ -183,11 +186,172 @@ class Shape:
         gdf = geopandas.read_file(input_file)
 
         # list of columns to drop
-        retain_cols = retain_cols + ['geometry']
-        drop_cols = [col for col in gdf.columns if col not in retain_cols]
+        column_list = column_list + ['geometry']
+        drop_cols = [col for col in gdf.columns if col not in column_list]
         gdf = gdf.drop(columns=drop_cols)
 
         # saving output GeoDataFrame
+        gdf.to_file(output_file)
+
+        return gdf
+
+    def column_unique_values(
+        self,
+        shape_file: str,
+        column_list: list[str] | None = None
+    ) -> dict[str, list[typing.Any]]:
+
+        '''
+        Retrieves unique values from specified columns in a shapefile.
+
+        Parameters
+        ----------
+        shape_file : str
+            Path to the input shapefile.
+
+        column_list : list, optional
+            List of column names to extract unique values from, excluding the 'geometry' column.
+            Defaults to None, in which case all non-geometry columns are selected.
+
+        Returns
+        -------
+        dict
+            A dictionary where each key is a column name and the corresponding value
+            is a list of that column's unique entries.
+        '''
+
+        # getting unique values
+        gdf = geopandas.read_file(shape_file)
+        unique_values = {}
+        target_columns = list(gdf.columns) if column_list is None else column_list
+        for col in target_columns:
+            if col != 'geometry':
+                unique_values[col] = gdf[col].unique().tolist()
+
+        return unique_values
+
+    def column_area_by_value(
+        self,
+        shape_file: str,
+        column_name: str,
+        csv_file: str,
+        descending_area: bool = True
+    ) -> pandas.DataFrame:
+
+        '''
+        Calculate the total area for each unique value
+        in a specified column of the input shapefile.
+
+        Parameters
+        ----------
+        shape_file : str
+            Path to the input shapefile.
+
+        column_name : str
+            Name of the target column.
+
+        csv_file : str
+            Path to the CSV file where the output DataFrame will be saved.
+
+        descending_area : bool, optional
+             If True, the output DataFrame is sorted in descending order by area.
+             The default is True.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame with unique column values,
+            their corresponding total area, and area percentage.
+        '''
+
+        # check LineString geometry type
+        if 'Polygon' not in Core().shapefile_geometry_type(shape_file):
+            raise Exception('Input shapefile must have geometries of type Polygon.')
+
+        # unique column entries
+        gdf = geopandas.read_file(shape_file)
+        unique_values = gdf[column_name].unique().tolist()
+
+        # get area for unique values
+        area_list = []
+        for i in unique_values:
+            i_area = gdf[gdf[column_name].isin([i])].geometry.area.sum()
+            area_list.append(
+                {
+                    'value': i,
+                    'area': i_area
+                }
+            )
+
+        # DataFrame
+        df = pandas.DataFrame.from_records(
+            data=area_list
+        )
+        df['area (%)'] = 100 * df['area'] / df['area'].sum()
+        df = df.sort_values(
+            by='area (%)',
+            ascending=not descending_area,
+            ignore_index=True
+        )
+
+        # saving the DataFrame
+        df.to_csv(
+            path_or_buf=csv_file,
+            sep='\t',
+            index_label='index'
+        )
+
+        return df
+
+    def column_add_mapped_values(
+        self,
+        input_file: str,
+        column_exist: str,
+        column_new: str,
+        mapping_value: dict[typing.Any, typing.Any],
+        output_file: str
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Adds a new column to the GeoDataFrame from the input shapefile,
+        using a mapping applied to values in an existing column.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input shapefile.
+
+        column_exsit : str
+            Name of the existing column in the GeoDataFrame to be used for value mapping.
+
+        column_new : str
+            Name of the new column to be added to the GeoDataFrame.
+
+        mapping_value : dict
+            A dictionary where keys correspond to unique values in the existing column,
+            and values are the new values to assign in the new column.
+
+        output_file : str
+            Path to the shapefile where the output GeoDataFrame will be saved.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame with an additional column containing values mapped from the existing column.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # value mapping of new column
+        gdf = geopandas.read_file(input_file)
+        gdf[column_new] = gdf[column_exist].apply(
+            lambda x: mapping_value.get(x)
+        )
+
+        # saving modified geodataframe
         gdf.to_file(output_file)
 
         return gdf
@@ -235,7 +399,6 @@ class Shape:
 
         return gdf
 
-    # pytest pending
     def boundary_box(
         self,
         input_file: str,
@@ -632,7 +795,7 @@ class Shape:
 
         return extract_gdf
 
-    def aggregate_geometries(
+    def aggregate_geometries_from_shapefiles(
         self,
         folder_path: str,
         geometry_type: str,
@@ -714,3 +877,99 @@ class Shape:
         aggr_gdf.to_file(output_file)
 
         return aggr_gdf
+
+    def aggregate_geometries_from_layers(
+        self,
+        input_file: str,
+        geometry_type: str,
+        output_file: str,
+        column_list: list[str] | None = None,
+        layer_column: str = 'layer'
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Aggregates geometries of a specified type from multiple layers in an input file.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input file containing multiple layers.
+
+        geometry_type : str
+            Type of geometry to aggregate. Must be one of: 'Point', 'LineString', or 'Polygon'.
+
+        output_file : str
+            Path to the output file where the aggregated GeoDataFrame will be saved.
+
+        column_list : list, optional
+            List of common columns (excluding 'geometry') to include in the aggregated GeoDataFrame.
+            If None (default), only the 'geometry' column and an additional column with the layer name
+            will be included.
+
+        layer_column : str, optional
+            Name of the column that will store the layer names in the aggregated GeoDataFrame. Default is 'layer'.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing all geometries of the specified type
+            aggregated from the layers of the input file, including a column with the corresponding layer names.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check for restricted use of 'geometry' in column_list
+        if column_list is not None and 'geometry' in column_list:
+            raise Exception(
+                'The column name "geometry" cannot be included in the column_list.'
+            )
+
+        # check for restricted use of the layer column name in column_list
+        if column_list is not None and layer_column in column_list:
+            raise Exception(
+                f'To include "{layer_column}" in column_list, the name of the optional variable layer_column must be changed.'
+            )
+
+        # check geometry type
+        geometry_list = ['Point', 'LineString', 'Polygon']
+        if geometry_type not in geometry_list:
+            raise Exception(
+                f'Input geometry type must be one of {geometry_list}.'
+            )
+
+        # target layers in the KML file
+        layer_list = []
+        for layer_name, layer_type in pyogrio.list_layers(input_file):
+            if layer_type is not None and geometry_type in layer_type:
+                layer_list.append(layer_name)
+
+        # list of GeoDataFrames for layers
+        gdf_list = []
+        default_cols = [layer_column, 'geometry']
+        for layer in layer_list:
+            layer_gdf = geopandas.read_file(
+                filename=input_file,
+                layer=layer
+            )
+            layer_gdf[layer_column] = layer
+            gdf_columns = default_cols if column_list is None else column_list + default_cols
+            layer_gdf = layer_gdf[gdf_columns]
+            gdf_list.append(layer_gdf)
+
+        # combine the GeoDataFrames
+        gdf = geopandas.GeoDataFrame(
+            pandas.concat(
+                objs=gdf_list,
+                ignore_index=True
+            )
+        )
+
+        # saving GeoDataFrame
+        gdf.to_file(
+            filename=output_file
+        )
+
+        return gdf
