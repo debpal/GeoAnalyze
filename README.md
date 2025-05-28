@@ -68,7 +68,7 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
 - Rescaling raster resolution
 - Clipping a raster using a shapefile
 - Overlaying geometries onto a raster
-- Reprojecting the Coordinate Reference System (CRS)
+- Managing Coordinate Reference System (CRS)
 - Handling NoData values in a raster  
 - Generating boundary polygons from a raster
 - Reclassifying raster values
