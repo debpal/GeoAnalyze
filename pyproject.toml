@@ -28,6 +28,7 @@ classifiers = [
 	"Operating System :: OS Independent",
 	"Intended Audience :: Education",
     "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
 	"Topic :: Scientific/Engineering :: GIS",
 	"Topic :: Scientific/Engineering :: Hydrology"
 ]
@@ -42,7 +43,7 @@ keywords = [
 
 [project.urls]
 "Homepage" = "https://github.com/debpal/GeoAnalyze"
-"Documentation" = "http://GeoAnalyze.readthedocs.io/"
+"Documentation" = "https://geoanalyze.readthedocs.io/en/latest/"
 
 
 [tool.setuptools.dynamic]
