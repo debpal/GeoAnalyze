@@ -1,7 +1,6 @@
 sphinx_rtd_theme
 geopandas
 rasterio
-fiona
 pyflwdir
 matplotlib
 
