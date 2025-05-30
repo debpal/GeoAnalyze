@@ -116,8 +116,8 @@ class Core:
         str
             Geometry type of the shapefile.
         '''
-            
-        output = pyogrio.read_info(shape_file)['geometry_type']
+
+        output = str(pyogrio.read_info(shape_file)['geometry_type'])
 
         return output
 

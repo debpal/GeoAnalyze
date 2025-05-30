@@ -121,5 +121,5 @@ def test_github_action(
 ):
 
     assert core._github_action(
-        integer=2
-    ) == '2'
+        integer=1
+    ) == '1'
