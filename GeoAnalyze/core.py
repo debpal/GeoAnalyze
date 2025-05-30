@@ -1,5 +1,4 @@
 import string
-import fiona
 import pyogrio
 import rasterio
 import geopandas
@@ -117,9 +116,8 @@ class Core:
         str
             Geometry type of the shapefile.
         '''
-
-        with fiona.open(shape_file) as input_shape:
-            output = str(input_shape.schema['geometry'])
+            
+        output = pyogrio.read_info(shape_file)['geometry_type']
 
         return output
 
