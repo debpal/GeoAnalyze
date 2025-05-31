@@ -32,7 +32,7 @@ To extract the basin area from the extended DEM, a main outlet point must be spe
 by identifying the highest flow accumulation point as the main outlet. Before proceeding, the DEM must be converted to a projected CRS to ensure accurate hydrological computations.
 
 The following code converts the extended DEM to a projected Coordinate Reference System (CRS) and extracts the corresponding basin area, along with a clipped version of the DEM.
-The extended dem raster can be accessed from the `tests` directory of the the `GeoAnalyze  <https://github.com/debpal/GeoAnalyze/tree/main/tests>`_ package.
+The extended dem raster can be accessed from the `data  <https://github.com/debpal/GeoAnalyze/tree/main/tests/data>`_ directory.
 
 
 .. code-block:: python
