@@ -53,6 +53,22 @@ To rescale the raster resolution (e.g., from 15.49 m to 20 m), use the following
     )
     
     
+Linear Transformation of Raster Values 
+------------------------------------------
+
+To apply a linear transformation to the raster values, use the following code:
+
+
+.. code-block:: python
+
+    # linear transformation of raster values (scale * array + offset)
+    raster.value_scale_and_offset(
+        input_file=r"C:\users\username\folder\input.tif",
+        output_file=r"C:\users\username\folder\output.tif"
+        scale=10,
+        offset=5
+    )
+    
 Clipping a Raster Using a Shapefile 
 ---------------------------------------
 

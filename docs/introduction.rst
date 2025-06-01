@@ -74,7 +74,7 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
 - Computing raster statistics
 - Counting unique raster values
 - Trimming and extending rasters
-- Extracting raster values using a mask
+- Extracting raster values using a mask or range filter
 - Merging multiple raster files
 - Rewriting a raster with a different driver
 
