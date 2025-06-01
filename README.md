@@ -66,6 +66,7 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
   
 - Rasterizing input geometries
 - Rescaling raster resolution
+- Transforming raster values
 - Clipping a raster using a shapefile
 - Overlaying geometries onto a raster
 - Managing Coordinate Reference System (CRS)
@@ -75,7 +76,7 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
 - Computing raster statistics
 - Counting unique raster values
 - Trimming and extending rasters
-- Extracting raster values using a mask
+- Extracting raster values using a mask or range filter
 - Merging multiple raster files
 - Rewriting a raster with a different driver
 
