@@ -141,6 +141,13 @@ def test_functions(
         )
         assert output_profile['width'] == 3155
         assert output_profile['height'] == 3348
+        # raster value scale and offet
+        output_array = GeoAnalyze.Raster().value_scale_and_offset(
+            input_file=os.path.join(tmp_dir, 'dem_mask.tif'),
+            output_file=os.path.join(tmp_dir, 'dem_mask_scale_10.tif'),
+            scale=10
+        )
+        assert 2820 in output_array
         # removing Coordinate Reference System
         output_profile = raster.crs_removal(
             input_file=os.path.join(tmp_dir, 'stream.tif'),
@@ -169,6 +176,15 @@ def test_functions(
             fill_value=0
         )
         assert output_list == [0, 60]
+        # raster value extraction by range
+        output_list = raster.extract_value_by_range(
+            input_file=os.path.join(tmp_dir, 'stream.tif'),
+            output_file=os.path.join(tmp_dir, 'stream_value_extract_by_range.tif'),
+            lower_bound=3,
+            upper_bound=6
+        )
+        assert output_list[0] >= 3
+        assert output_list[1] <= 6
 
 
 def test_error_raster_file_driver(
@@ -199,6 +215,14 @@ def test_error_raster_file_driver(
             mask_file='dem.tif',
             resampling_method='bilinear',
             output_file='dem_16m.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # raster value scale and offet
+    with pytest.raises(Exception) as exc_info:
+        raster.value_scale_and_offset(
+            input_file='dem_mask.tif',
+            output_file='dem_mask_scale_10.tifff',
+            scale=10
         )
     assert exc_info.value.args[0] == message['error_driver']
     # removing Coordinate Reference System
@@ -341,6 +365,15 @@ def test_error_raster_file_driver(
             output_file='flwdir_extract.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # raster value extraction by range
+    with pytest.raises(Exception) as exc_info:
+        raster.extract_value_by_range(
+            input_file='stream.tif',
+            output_file='stream_value_extract_by_range.tifff',
+            lower_bound=3,
+            upper_bound=6
+        )
+    assert exc_info.value.args[0] == message['error_driver']
     # raster driver conversion
     with pytest.raises(Exception) as exc_info:
         raster.driver_convert(
@@ -383,3 +416,16 @@ def test_error_resampling_method(
             output_file='dem_EPSG4326.tif'
         )
     assert exc_info.value.args[0] == message['error_resampling']
+
+
+def test_error_others(
+    raster
+):
+
+    # raster value extraction by range
+    with pytest.raises(Exception) as exc_info:
+        raster.extract_value_by_range(
+            input_file='stream.tif',
+            output_file='stream_value_extract_by_range.tif'
+        )
+    assert exc_info.value.args[0] == 'At least one of the lower or upper bounds must be specified.'

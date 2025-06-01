@@ -7,6 +7,7 @@ import geopandas
 import pandas
 import numpy
 import os
+import operator
 from .core import Core
 from .file import File
 
@@ -229,7 +230,8 @@ class Raster:
             df['Cumulative_Count(%)'] = df['Count(%)'].cumsum()
             df.to_csv(
                 path_or_buf=csv_file,
-                index_label='Index'
+                index_label='Index',
+                sep='\t'
             )
 
         return df
@@ -454,6 +456,73 @@ class Raster:
 
         return output_profile
 
+    def value_scale_and_offset(
+        self,
+        input_file: str,
+        output_file: str,
+        scale: float = 1,
+        offset: float = 0,
+        dtype: typing.Optional[str] = None,
+        nodata: typing.Optional[float] = None
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Applies a linear transformation to raster values using the formula:
+
+        `output_array = scale * raster_array + offset`.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        output_file : str
+            Path to the output raster file after applying the scale and offset.
+
+        scale : float, optional
+            Scaling factor to apply to the raster values. Default is 1.
+
+        offset : float, optional
+            Offset value to add to the scaled raster values. Default is 0.
+
+        dtype : str, optional
+            Data type of the output raster.
+            If None, the data type of the input raster is retained.
+
+        nodata : float, optional
+            NoData value to assign in the output raster.
+            If None, the NoData value of the input raster is retained.
+
+        Returns
+        -------
+        profile
+            A profile containing metadata about the output raster.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # read input raster
+        with rasterio.open(input_file) as input_raster:
+            raster_profile = input_raster.profile
+            raster_array = input_raster.read(1)
+            mask_array = raster_array == raster_profile['nodata']
+            # scale and offset
+            output_array = scale * raster_array + offset
+            # NoData processing
+            raster_profile['nodata'] = raster_profile['nodata'] if nodata is None else nodata
+            output_array[mask_array] = raster_profile['nodata']
+            # Data type procesing
+            raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
+            output_array = output_array.astype(raster_profile['dtype'])
+            # saving output raster
+            with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
+                output_raster.write(output_array, 1)
+
+        return output_array
+
     def crs_removal(
         self,
         input_file: str,
@@ -487,7 +556,7 @@ class Raster:
             raster_array = input_raster.read(1)
             raster_profile = input_raster.profile
 
-        # Write to new raster file
+        # saving output raster
         raster_profile['crs'] = None
         with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
             output_raster.write(raster_array, 1)
@@ -500,7 +569,7 @@ class Raster:
         input_file: str,
         crs_code: int,
         output_file: str,
-        driver: str | None = None
+        driver: typing.Optional[str] = None
     ) -> rasterio.profiles.Profile:
 
         '''
@@ -546,7 +615,7 @@ class Raster:
             }
         )
 
-        # Write to new raster file
+        # saving output raster
         with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
             output_raster.write(raster_array, 1)
             output_profile = output_raster.profile
@@ -729,7 +798,7 @@ class Raster:
         with rasterio.open(input_file) as input_raster:
             raster_profile = input_raster.profile
             raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
-            raster_array = input_raster.read(1).astype(dtype)
+            raster_array = input_raster.read(1).astype(raster_profile['dtype'])
             raster_array[raster_array == raster_profile['nodata']] = nodata
             raster_profile['nodata'] = nodata
             with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
@@ -781,7 +850,7 @@ class Raster:
         with rasterio.open(input_file) as input_raster:
             raster_profile = input_raster.profile
             raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
-            raster_array = input_raster.read(1).astype(dtype)
+            raster_array = input_raster.read(1).astype(raster_profile['dtype'])
             raster_array[raster_array == raster_profile['nodata']] = valid_value
             raster_profile['nodata'] = None if raster_profile['nodata'] == valid_value else raster_profile['nodata']
             with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
@@ -1138,6 +1207,7 @@ class Raster:
                 reclass_array[numpy.isin(raster_array, raster_val)] = reclass_val
             # saving reclassified raster
             raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
+            reclass_array = reclass_array.astype(raster_profile['dtype'])
             with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
                 output_raster.write(reclass_array, 1)
                 output = list(numpy.unique(reclass_array[reclass_array != output_raster.nodata]))
@@ -1577,6 +1647,102 @@ class Raster:
                 with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
                     output_raster.write(output_array, 1)
                     output = list(numpy.unique(output_array[output_array != output_raster.nodata]))
+
+        return output
+
+    def extract_value_by_range(
+        self,
+        input_file: str,
+        output_file: str,
+        lower_bound: typing.Optional[float] = None,
+        greater_strict: bool = False,
+        upper_bound: typing.Optional[float] = None,
+        lesser_strict: bool = False,
+        dtype: typing.Optional[str] = None,
+        nodata: typing.Optional[float] = None
+    ) -> list[float]:
+
+        '''
+        Extracts raster values within a specified value range.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        output_file : str
+            Path to save the output raster file after extracting values within the specified range.
+
+        lower_bound : float, optional
+            Lower bound for value extraction. If None, the minimum value from the input raster is used.
+
+        upper_bound : float, optional
+            Upper bound for value extraction. If None, the maximum value from the input raster is used.
+
+        dtype : str, optional
+            Data type of the output raster.
+            If None, the data type of the input raster is retained.
+
+        nodata : float, optional
+            NoData value to assign in the output raster.
+            If None, the NoData value of the input raster is retained.
+
+        Returns
+        -------
+        list
+            A list containing the minimum and maximum values of the output raster,
+            verifying the successful application of the value range.
+        '''
+
+        # check output file
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # check at least one bound value is not None
+        if lower_bound is None and upper_bound is None:
+            raise Exception('At least one of the lower or upper bounds must be specified.')
+
+        # raster statistics
+        input_stats = self.statistics_summary(
+            raster_file=input_file
+        )
+
+        # read input raster
+        with rasterio.open(input_file) as input_raster:
+            raster_profile = input_raster.profile
+            raster_array = input_raster.read(1)
+            # fixing boundary values
+            lower_bound = input_stats['Minimum'] if lower_bound is None else lower_bound
+            upper_bound = input_stats['Maximum'] if upper_bound is None else upper_bound
+            # fixing operator
+            greater_sign = operator.gt if greater_strict else operator.ge
+            lesser_sign = operator.lt if lesser_strict else operator.le
+            extract_values = raster_array[
+                greater_sign(raster_array, lower_bound) & lesser_sign(raster_array, upper_bound)
+            ]
+            true_array = numpy.isin(
+                element=raster_array,
+                test_elements=extract_values,
+            )
+            raster_profile['nodata'] = raster_profile['nodata'] if nodata is None else nodata
+            output_array = numpy.where(true_array, raster_array, raster_profile['nodata'])
+            # Data type procesing
+            raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
+            output_array = output_array.astype(raster_profile['dtype'])
+            output = list(numpy.unique(output_array[output_array != raster_profile['nodata']]))
+            # saving output raster
+            with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
+                output_raster.write(output_array, 1)
+
+        # output raster minimum and maximum values
+        output_stats = self.statistics_summary(
+            raster_file=output_file
+        )
+        output = [
+            output_stats['Minimum'],
+            output_stats['Maximum']
+        ]
 
         return output
 

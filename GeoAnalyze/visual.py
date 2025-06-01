@@ -18,6 +18,7 @@ class Visual:
         colormap: str = 'terrain',
         fig_width: float = 6,
         fig_height: float = 6,
+        fig_title: str = '',
         log_scale: bool = False,
         gui_window: bool = True
     ) -> matplotlib.figure.Figure:
@@ -42,6 +43,9 @@ class Visual:
 
         fig_height : float, optional
             Height of the figure in inches. Default is 6 inches.
+
+        fig_title : str, optional
+            Title of the figure. Default is an empty string.
 
         log_scale : bool, optional
             If True, display the colormap in logarithmic scale. Default is False.
@@ -94,6 +98,12 @@ class Visual:
             shrink=0.75
         )
 
+        # figure title
+        figure.suptitle(
+            fig_title,
+            fontsize=15
+        )
+
         # saving figure
         figure.tight_layout()
         figure.savefig(
@@ -115,6 +125,7 @@ class Visual:
         colormap: str = 'terrain',
         fig_width: float = 6,
         fig_height: float = 6,
+        fig_title: str = '',
         log_scale: bool = False,
         gui_window: bool = True
     ) -> matplotlib.figure.Figure:
@@ -142,6 +153,9 @@ class Visual:
 
         fig_height : float, optional
             Height of the figure in inches. Default is 6 inches.
+
+        fig_title : str, optional
+            Title of the figure. Default is an empty string.
 
         log_scale : bool, optional
             If True, display the colormap in logarithmic scale. Default is False.
@@ -180,6 +194,12 @@ class Visual:
             norm=norm,
             legend=True,
             legend_kwds={"shrink": 0.75}
+        )
+
+        # figure title
+        figure.suptitle(
+            fig_title,
+            fontsize=15
         )
 
         # saving figure
