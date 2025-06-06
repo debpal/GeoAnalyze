@@ -3,6 +3,14 @@ Release Notes
 ===============
 
 
+Version 1.2.2
+---------------
+
+* **Release date:** 06-May-2025.
+
+* **Features:** Added assistant functions to existing methods in the :class:`GeoAnalyze.Stream` class, allowing developers to retrieve outputs directly without saving them to a file.
+
+
 Version 1.2.1
 ---------------
 
@@ -12,8 +20,8 @@ Version 1.2.1
 
     * Added a new function to compute statistics by reference raster in the :class:`GeoAnalyze.Raster` class.
     * Introduced a function to extract a rectangular bounding box from input geometries in the :class:`GeoAnalyze.Shape` class.
-    * Remove the :class:`GeoAnalyze.PackageData` class, as the required data can be accessed
-      from the `tests` directory of the the `GeoAnalyze  <https://github.com/debpal/GeoAnalyze/tree/main/tests>`_ package.
+    * Remove the :class:`GeoAnalyze.PackageData` class, as the required data is now accessible
+      from the `tests  <https://github.com/debpal/GeoAnalyze/tree/main/tests>`_ directory of the :mod:`GeoAnalyze` package.
 
 
 Version 1.2.0
