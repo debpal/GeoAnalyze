@@ -171,14 +171,15 @@ class Watershed:
         outlet_type: str,
         tacc_type: str,
         tacc_value: float,
-        folder_path: str
+        folder_path: str,
+        flw_col: str = 'flw_id'
     ) -> str:
 
         '''
         Generates delineation raster outputs, including flow direction (`flwdir.tif`), slope (`slope.tif`), aspect (`aspect.tif`),
         and flow accumulation (`flwacc.tif`). Using the provided flow accumulation threshold, the function also generates shapefiles
         for streams (`stream_lines.shp`), subbasins (`subbasins.shp`), subbasin drainage points (`subbasin_drainage_points.shp`), and main outlets
-        (`outlet_points.shp`). All shapefiles share a common identifier column, `flw_id`, for easy cross-referencing.
+        (`outlet_points.shp`). All shapefiles include a common identifier column, `flw_col`, to facilitate cross-referencing.
 
         The `subbasins.shp` file contains an additional column, `area_m2`, which stores the area of each subbasin.
         The `subbasin_drainage_points.shp` file contains an additional column, `flwacc`, which stores the flow accumulation value at the drainage points.
@@ -205,6 +206,9 @@ class Watershed:
 
         folder_path : str
             Path to the output folder for saving files.
+
+        flw_col : str, optional
+            Name of the identifier column used in shapefiles to facilitate cross-referencing. Default is 'flw_id'.
 
         Returns
         -------
@@ -355,7 +359,6 @@ class Watershed:
         )
 
         # flow line GeoDataFrame
-        flw_col = 'flw_id'
         flw_gdf = feature_gdf[feature_gdf['pit'] == 0].reset_index(drop=True)
         flw_gdf[flw_col] = list(range(1, flw_gdf.shape[0] + 1))
         flw_gdf = flw_gdf[[flw_col, 'geometry']]
@@ -373,7 +376,7 @@ class Watershed:
         # outlet point GeoDataFrame
         outlet_gdf = feature_gdf[feature_gdf['pit'] == 1].reset_index(drop=True)
         outlet_gdf['outlet_id'] = range(1, outlet_gdf.shape[0] + 1)
-        outlet_gdf = outlet_gdf.geometry.apply(lambda x: shapely.Point(x.coords[-1]))
+        outlet_gdf.geometry = outlet_gdf.geometry.apply(lambda x: shapely.Point(x.coords[-1]))
         outlet_gdf.to_file(
             filename=os.path.join(folder_path, 'outlet_points.shp')
         )
@@ -393,7 +396,7 @@ class Watershed:
             columns=['pour_coords']
         )
         pour_array = rasterio.features.rasterize(
-            shapes=zip(pour_gdf.geometry, pour_gdf['flw_id']),
+            shapes=zip(pour_gdf.geometry, pour_gdf[flw_col]),
             out_shape=dem_shape,
             transform=dem_profile['transform'],
             all_touched=True,
@@ -401,10 +404,10 @@ class Watershed:
             dtype=dem_profile['dtype']
         )
         pour_flwacc = {}
-        for pid in pour_gdf['flw_id']:
+        for pid in pour_gdf[flw_col]:
             pid_flwacc = flwacc_array[pour_array == pid]
             pour_flwacc[pid] = pid_flwacc[0]
-        pour_gdf['flwacc'] = pour_gdf['flw_id'].apply(lambda x: pour_flwacc.get(x))
+        pour_gdf['flwacc'] = pour_gdf[flw_col].apply(lambda x: pour_flwacc.get(x))
         pour_gdf.to_file(
             filename=os.path.join(folder_path, 'subbasin_drainage_points.shp')
         )

@@ -113,6 +113,43 @@ class Stream:
 
         return output
 
+    def _connectivity_adjacent_downstream_segment(
+        self,
+        input_file: str,
+        stream_col: str,
+        link_col: str,
+        unlinked_id: int
+    ) -> geopandas.GeoDataFrame:
+
+        # stream geodataframe
+        stream_gdf = geopandas.read_file(input_file)
+
+        # endpoints of flow segments
+        upstream_points = {
+            idx: line.coords[0] for idx, line in zip(stream_gdf[stream_col], stream_gdf.geometry)
+        }
+        downstream_points = {
+            idx: line.coords[-1] for idx, line in zip(stream_gdf[stream_col], stream_gdf.geometry)
+        }
+
+        # downstream segment identifiers
+        downstream_link = {}
+        for dp_id in downstream_points.keys():
+            up_link = list(
+                filter(
+                    lambda up_id: upstream_points[up_id] == downstream_points[dp_id], upstream_points
+                )
+            )
+            if len(up_link) == 1:
+                downstream_link[dp_id] = up_link[0]
+            else:
+                downstream_link[dp_id] = unlinked_id
+
+        # saving output GeoDataFrame
+        stream_gdf[link_col] = downstream_link.values()
+
+        return stream_gdf
+
     def connectivity_adjacent_downstream_segment(
         self,
         input_file: str,
@@ -164,35 +201,53 @@ class Stream:
         if 'LineString' not in Core().shapefile_geometry_type(input_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
-        # stream geodataframe
-        stream_gdf = geopandas.read_file(input_file)
-
-        # endpoints of flow segments
-        upstream_points = {
-            idx: line.coords[0] for idx, line in zip(stream_gdf[stream_col], stream_gdf.geometry)
-        }
-        downstream_points = {
-            idx: line.coords[-1] for idx, line in zip(stream_gdf[stream_col], stream_gdf.geometry)
-        }
-
-        # downstream segment identifiers
-        downstream_link = {}
-        for dp_id in downstream_points.keys():
-            up_link = list(
-                filter(
-                    lambda up_id: upstream_points[up_id] == downstream_points[dp_id], upstream_points
-                )
-            )
-            if len(up_link) == 1:
-                downstream_link[dp_id] = up_link[0]
-            else:
-                downstream_link[dp_id] = unlinked_id
-
-        # saving output GeoDataFrame
-        stream_gdf[link_col] = downstream_link.values()
+        # saving output GepDataFrame
+        stream_gdf = self._connectivity_adjacent_downstream_segment(
+            input_file=input_file,
+            stream_col=stream_col,
+            link_col=link_col,
+            unlinked_id=unlinked_id
+        )
         stream_gdf.to_file(output_file)
 
         return stream_gdf
+
+    def _connectivity_adjacent_upstream_segment(
+        self,
+        stream_file: str,
+        stream_col: str,
+        link_col: str,
+        unlinked_id: int
+    ) -> pandas.DataFrame:
+
+        # connectivity to downstream segment identifiers
+        stream_gdf = self._connectivity_adjacent_downstream_segment(
+            input_file=stream_file,
+            stream_col=stream_col,
+            link_col='ds_id',
+            unlinked_id=-1
+        )
+        # non headwater segments by exchanging stream and adjacent donwstream columns
+        nhw_df = stream_gdf[['ds_id', stream_col]]
+        nhw_df = nhw_df[~nhw_df['ds_id'].isin([-1])].reset_index(drop=True)
+        nhw_df.columns = [stream_col, link_col]
+        # predict headwater segments
+        hw_list = [
+            i for i in stream_gdf[stream_col] if i not in nhw_df[stream_col].tolist()
+        ]
+        hw_df = pandas.DataFrame({stream_col: hw_list})
+        hw_df[link_col] = unlinked_id
+        # adjance upstream segements
+        ul_df = pandas.concat(
+            objs=[nhw_df, hw_df],
+            ignore_index=True
+        )
+        ul_df = ul_df.sort_values(
+            by=[stream_col, link_col],
+            ignore_index=True
+        )
+
+        return ul_df
 
     def connectivity_adjacent_upstream_segment(
         self,
@@ -241,41 +296,52 @@ class Stream:
         if 'LineString' not in Core().shapefile_geometry_type(stream_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
-        # temporary directory
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            # connectivity to downstream segment identifiers
-            stream_gdf = self.connectivity_adjacent_downstream_segment(
-                input_file=stream_file,
-                stream_col=stream_col,
-                output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
-            )
-            # non headwater segments by exchanging stream and adjacent donwstream columns
-            nhw_df = stream_gdf[['ds_id', stream_col]]
-            nhw_df = nhw_df[~nhw_df['ds_id'].isin([-1])].reset_index(drop=True)
-            nhw_df.columns = [stream_col, link_col]
-            # predict headwater segments
-            hw_list = [
-                i for i in stream_gdf[stream_col] if i not in nhw_df[stream_col].tolist()
-            ]
-            hw_df = pandas.DataFrame({stream_col: hw_list})
-            hw_df[link_col] = unlinked_id
-            # adjance upstream segements
-            ul_df = pandas.concat(
-                objs=[nhw_df, hw_df],
-                ignore_index=True
-            )
-            ul_df = ul_df.sort_values(
-                by=[stream_col, link_col],
-                ignore_index=True
-            )
-            # saving adjacent upstream connectivity
-            ul_df.to_csv(
-                path_or_buf=csv_file,
-                sep='\t',
-                index=False
-            )
+        # saving adjacent upstream connectivity
+        ul_df = self._connectivity_adjacent_upstream_segment(
+            stream_file=stream_file,
+            stream_col=stream_col,
+            link_col=link_col,
+            unlinked_id=unlinked_id
+        )
+        ul_df.to_csv(
+            path_or_buf=csv_file,
+            sep='\t',
+            index=False
+        )
 
         return ul_df
+
+    def _connectivity_upstream_to_downstream(
+        self,
+        stream_file: str,
+        stream_col: str
+    ) -> dict[float, list[float]]:
+
+        # connectivity to downstream segment identifiers
+        stream_gdf = self._connectivity_adjacent_downstream_segment(
+            input_file=stream_file,
+            stream_col=stream_col,
+            link_col='ds_id',
+            unlinked_id=-1
+        )
+        stream_df = stream_gdf[[stream_col, 'ds_id']]
+        stream_link = dict(
+            (i, i) if j == -1 else (i, j) for i, j in zip(stream_df[stream_col], stream_df['ds_id'])
+        )
+        # upstream to downstream total connectivity
+        us2ds_link: dict[float, list[float]] = {
+            i: list() for i in stream_link.keys()
+        }
+        for i in stream_link:
+            fix_i = i
+            while True:
+                if stream_link[i] in us2ds_link[fix_i]:
+                    break
+                else:
+                    us2ds_link[fix_i].append(stream_link[i])
+                    i = stream_link[i]
+
+        return us2ds_link
 
     def connectivity_upstream_to_downstream(
         self,
@@ -315,35 +381,55 @@ class Stream:
         if 'LineString' not in Core().shapefile_geometry_type(stream_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
-        # temporary directory
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            # connectivity to downstream segment identifiers
-            stream_gdf = self.connectivity_adjacent_downstream_segment(
-                input_file=stream_file,
-                stream_col=stream_col,
-                output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
-            )
-            stream_df = stream_gdf[[stream_col, 'ds_id']]
-            stream_link = dict(
-                (i, i) if j == -1 else (i, j) for i, j in zip(stream_df[stream_col], stream_df['ds_id'])
-            )
-            # upstream to downstream total connectivity
-            us2ds_link: dict[float, list[float]] = {
-                i: list() for i in stream_link.keys()
-            }
-            for i in stream_link:
-                fix_i = i
-                while True:
-                    if stream_link[i] in us2ds_link[fix_i]:
-                        break
-                    else:
-                        us2ds_link[fix_i].append(stream_link[i])
-                        i = stream_link[i]
-            # saving upstream to downstream connectivity
-            with open(json_file, 'w') as output_us2ds:
-                json.dump(us2ds_link, output_us2ds)
+        # saving upstream to downstream connectivity
+        us2ds_link = self._connectivity_upstream_to_downstream(
+            stream_file=stream_file,
+            stream_col=stream_col
+        )
+        with open(json_file, 'w') as output_us2ds:
+            json.dump(us2ds_link, output_us2ds)
 
         return us2ds_link
+
+    def _connectivity_downstream_to_upstream(
+        self,
+        stream_file: str,
+        stream_col: str
+    ) -> dict[float, list[list[float]]]:
+
+        # connectivity to downstream segment identifiers
+        stream_gdf = self._connectivity_adjacent_downstream_segment(
+            input_file=stream_file,
+            stream_col=stream_col,
+            link_col='ds_id',
+            unlinked_id=-1
+        )
+        stream_df = stream_gdf[[stream_col, 'ds_id']]
+        stream_link = {
+            i: j for i, j in zip(stream_df[stream_col], stream_df['ds_id'])
+        }
+        # downstream to upstream total connectivity
+        ds2us_link: dict[float, list[list[float]]] = {
+            i: list() for i in stream_link.keys()
+        }
+        for i in stream_link.keys():
+            if i not in stream_link.values():
+                pass
+            else:
+                i_connect = [i]
+                while True:
+                    i_upstream = list(
+                        filter(
+                            lambda x: stream_link[x] in i_connect, stream_link
+                        )
+                    )
+                    if len(i_upstream) == 0:
+                        break
+                    else:
+                        ds2us_link[i].append(i_upstream)
+                        i_connect = ds2us_link[i][-1]
+
+        return ds2us_link
 
     def connectivity_downstream_to_upstream(
         self,
@@ -382,43 +468,46 @@ class Stream:
         if 'LineString' not in Core().shapefile_geometry_type(stream_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
-        # temporary directory
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            # connectivity to downstream segment identifiers
-            stream_gdf = self.connectivity_adjacent_downstream_segment(
-                input_file=stream_file,
-                stream_col=stream_col,
-                output_file=os.path.join(tmp_dir, 'stream_downstream_id.shp')
-            )
-            stream_df = stream_gdf[[stream_col, 'ds_id']]
-            stream_link = {
-                i: j for i, j in zip(stream_df[stream_col], stream_df['ds_id'])
-            }
-            # downstream to upstream total connectivity
-            ds2us_link: dict[float, list[list[float]]] = {
-                i: list() for i in stream_link.keys()
-            }
-            for i in stream_link.keys():
-                if i not in stream_link.values():
-                    pass
-                else:
-                    i_connect = [i]
-                    while True:
-                        i_upstream = list(
-                            filter(
-                                lambda x: stream_link[x] in i_connect, stream_link
-                            )
-                        )
-                        if len(i_upstream) == 0:
-                            break
-                        else:
-                            ds2us_link[i].append(i_upstream)
-                            i_connect = ds2us_link[i][-1]
-            # saving downstream to upstream connectivitye
-            with open(json_file, 'w') as output_ds2us:
-                json.dump(ds2us_link, output_ds2us)
+        # saving downstream to upstream connectivitye
+        ds2us_link = self._connectivity_downstream_to_upstream(
+            stream_file=stream_file,
+            stream_col=stream_col
+        )
+        with open(json_file, 'w') as output_ds2us:
+            json.dump(ds2us_link, output_ds2us)
 
         return ds2us_link
+
+    def _connectivity_to_all_upstream_segments(
+        self,
+        stream_file: str,
+        stream_col: str,
+        link_col: str,
+        unlinked_id: int
+    ) -> pandas.DataFrame:
+
+        # downstream to upstream total connectivity
+        ds2us_link = self._connectivity_downstream_to_upstream(
+            stream_file=stream_file,
+            stream_col=stream_col
+        )
+        # adjacent upstream segment
+        up_link = []
+        for key, value in ds2us_link.items():
+            value_list = [j for i in value for j in i]
+            if len(value_list) == 0:
+                up_link.append({stream_col: key, link_col: unlinked_id})
+            else:
+                for ul in value_list:
+                    up_link.append({stream_col: key, link_col: ul})
+        # converting list to DataFrame
+        ul_df = pandas.DataFrame(up_link)
+        ul_df = ul_df.sort_values(
+            by=[stream_col, link_col],
+            ignore_index=True
+        )
+
+        return ul_df
 
     def connectivity_to_all_upstream_segments(
         self,
@@ -470,35 +559,18 @@ class Stream:
         if 'LineString' not in Core().shapefile_geometry_type(stream_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
-        # temporary directory
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            # downstream to upstream total connectivity
-            ds2us_link = self.connectivity_downstream_to_upstream(
-                stream_file=stream_file,
-                stream_col=stream_col,
-                json_file=os.path.join(tmp_dir, 'stream_ds2us.json')
-            )
-            # adjacent upstream segment
-            up_link = []
-            for key, value in ds2us_link.items():
-                value_list = [j for i in value for j in i]
-                if len(value_list) == 0:
-                    up_link.append({stream_col: key, link_col: unlinked_id})
-                else:
-                    for ul in value_list:
-                        up_link.append({stream_col: key, link_col: ul})
-            # converting list to DataFrame
-            ul_df = pandas.DataFrame(up_link)
-            ul_df = ul_df.sort_values(
-                by=[stream_col, link_col],
-                ignore_index=True
-            )
-            # saving adjacent upstream connectivity
-            ul_df.to_csv(
-                path_or_buf=csv_file,
-                sep='\t',
-                index=False
-            )
+        # saving adjacent upstream connectivity
+        ul_df = self._connectivity_to_all_upstream_segments(
+            stream_file=stream_file,
+            stream_col=stream_col,
+            link_col=link_col,
+            unlinked_id=unlinked_id
+        )
+        ul_df.to_csv(
+            path_or_buf=csv_file,
+            sep='\t',
+            index=False
+        )
 
         return ul_df
 
