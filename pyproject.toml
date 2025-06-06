@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "GeoAnalyze"
 dynamic = ["version"]
-description = "A Python package designed to provide toolkits for geospatial analysis."
+description = "A Python package offering toolkits for geospatial processing, watershed delineation, and hydrologic analysis."
 authors = [
   { name="Debasish Pal", email="bestdebasish@gmail.com" },
 ]
@@ -35,9 +35,12 @@ classifiers = [
 license = "MIT"
 license-files = ["LICEN[CS]E.*"]
 keywords = [
+    "GIS",
     "Watershed",
-    "Delineation",
-	"Geoprocessing"
+    "Hydrology",
+    "Spatial analysis",
+    "Raster",
+    "Vector"
 ]
 
 
