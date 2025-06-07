@@ -36,12 +36,6 @@ def test_functions(
             file_names=['stream', 'dem_mask']
         )
         assert 'stream.shp' in transfer_list
-        # boundary polygon GeoDataFrame
-        output_gdf = raster.boundary_polygon(
-            raster_file=os.path.join(tmp_dir, 'dem_mask.tif'),
-            shape_file=os.path.join(tmp_dir, 'dem_mask_boundary.shp')
-        )
-        assert len(output_gdf) == 1
         # raster array from geometries without filling mask region
         output_profile = raster.array_from_geometries(
             shape_file=os.path.join(tmp_dir, 'stream.shp'),

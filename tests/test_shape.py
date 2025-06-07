@@ -163,13 +163,45 @@ def test_functions(
             index_sort=True
         )
         assert len(lakecutoff_gdf) == 10
-        # pass test for extracting spatial join geometries
+        # extracting spatial join geometries
         extract_gdf = shape.extract_spatial_join_geometries(
             input_file=lake_file,
             overlay_file=os.path.join(data_folder, 'stream.shp'),
             output_file=os.path.join(tmp_dir, 'lake_extracted.shp')
         )
         assert len(extract_gdf) == 6
+        # extracting geometries by overlap threshold
+        boundary_gdf = GeoAnalyze.Raster().boundary_polygon(
+            raster_file=os.path.join(data_folder, 'dem_mask.tif'),
+            shape_file=os.path.join(tmp_dir, 'dem_mask_boundary.shp')
+        )
+        assert len(boundary_gdf) == 1
+        extract_gdf = shape.extract_polygons_by_overlap_threshold(
+            input_file=os.path.join(data_folder, 'dem_mask_index.shp'),
+            mask_file=os.path.join(tmp_dir, 'dem_mask_boundary.shp'),
+            output_file=os.path.join(tmp_dir, 'dem_mask_index_extracted.shp'),
+            overlap_percent=50
+        )
+        assert len(extract_gdf) == 13
+        # error test extracting geometries by overlap threshold
+        disconnect_box = shapely.box(
+            xmin=boundary_gdf.total_bounds[2] + 1000,
+            ymin=boundary_gdf.total_bounds[3] + 1000,
+            xmax=boundary_gdf.total_bounds[2] + 1000 + 1000,
+            ymax=boundary_gdf.total_bounds[3] + 1000 + 1000
+        )
+        disconnect_gdf = geopandas.GeoDataFrame(
+            geometry=[disconnect_box],
+            crs=boundary_gdf.crs
+        )
+        disconnect_gdf.to_file(os.path.join(tmp_dir, 'mask_disconnect.shp'))
+        with pytest.raises(Exception) as exc_info:
+            shape.extract_polygons_by_overlap_threshold(
+                input_file=os.path.join(data_folder, 'dem_mask_index.shp'),
+                mask_file=os.path.join(tmp_dir, 'mask_disconnect.shp'),
+                output_file=os.path.join(tmp_dir, 'dem_mask_disconect.shp')
+            )
+        assert exc_info.value.args[0] == 'No overlapping geometry found'
         # aggregating geometries from shapefile
         with tempfile.TemporaryDirectory() as tmp2_dir:
             lake1_gdf = lake_gdf.iloc[:50, :]
@@ -393,6 +425,14 @@ def test_error_shapefile_driver(
             output_file='output.sh'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # extracting geometries by overlap threshold
+    with pytest.raises(Exception) as exc_info:
+        shape.extract_polygons_by_overlap_threshold(
+            input_file='dem_mask_index.shp',
+            mask_file='dem_mask_boundary.shp',
+            output_file='dem_mask_index_extracted.sh'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
     # aggregating geometries from shapefiles
     with pytest.raises(Exception) as exc_info:
         shape.aggregate_geometries_from_shapefiles(
@@ -457,5 +497,13 @@ def test_error_geometry(
                 input_file=point_file,
                 percent_cutoff=90,
                 output_file='output.shp'
+            )
+        assert exc_info.value.args[0] == message['error_geometry']
+        # extracting geometries by overlap threshold
+        with pytest.raises(Exception) as exc_info:
+            shape.extract_polygons_by_overlap_threshold(
+                input_file=point_file,
+                mask_file='dem_mask_boundary.shp',
+                output_file='dem_mask_index_extracted.shp'
             )
         assert exc_info.value.args[0] == message['error_geometry']

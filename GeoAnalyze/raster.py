@@ -1676,8 +1676,16 @@ class Raster:
         lower_bound : float, optional
             Lower bound for value extraction. If None, the minimum value from the input raster is used.
 
+        greater_strict : bool, optional
+            If False (default), values greater than or equal to `lower_bound` are included.
+            If True, only values strictly greater than `lower_bound` are included.
+
         upper_bound : float, optional
             Upper bound for value extraction. If None, the maximum value from the input raster is used.
+
+        lesser_strict : bool, optional
+            If False (default), values less than or equal to `upper_bound` are included.
+            If True, only values strictly less than `upper_bound` are included.
 
         dtype : str, optional
             Data type of the output raster.

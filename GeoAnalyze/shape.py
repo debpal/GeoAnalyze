@@ -4,6 +4,7 @@ import pandas
 import pyogrio
 import os
 import typing
+import operator
 from .core import Core
 from .file import File
 
@@ -791,6 +792,108 @@ class Shape:
         )
 
         # saving output GeoDataFrame
+        extract_gdf.to_file(output_file)
+
+        return extract_gdf
+
+    def extract_polygons_by_overlap_threshold(
+        self,
+        input_file: str,
+        mask_file: str,
+        output_file: str,
+        overlap_percent: float = 0,
+        greater_strict: bool = False,
+        overlap_col: str = 'overlap(%)'
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Extracts polygons from an input shapefile based on their overlap percentage with mask geometries.
+
+            .. note::
+                Although extraction is based on overlap percentage, the output shapefile
+                will contain the entire original polygons, not clipped geometries.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input polygon shapefile.
+
+        mask_file : str
+            Path to the mask polygon shapefile used for overlap calculation.
+
+        output_file : str
+            Path to the output shapefile where the extracted polygons will be saved.
+
+        overlap_percent : float, optional
+            Threshold for minimum percentage of overlap to include a polygon.
+            Default is 0, meaning all overlapping geometries are included.
+
+        greater_strict : bool, optional
+            If False (default), includes polygons with overlap percentage greater than or equal to `overlap_percent`.
+            If True, includes only those with overlap strictly greater than `overlap_percent`.
+
+        overlap_col : str, optional
+            Name of the column in the output shapefile that will store the computed overlap percentages.
+            Default is 'overlap(%)'.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing polygons that meet the specified overlap threshold with the mask geometries.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # confirming input geometry type is Polygon
+        geometry_type = Core().shapefile_geometry_type(
+            shape_file=input_file
+        )
+        if 'Polygon' not in geometry_type:
+            raise Exception('Input shapefile must have geometries of type Polygon.')
+
+        # input GeoDataFrame
+        tmp_col = '1tc3_id'
+        input_gdf = geopandas.read_file(input_file)
+        input_gdf['tc_actual_area'] = input_gdf.geometry.area
+        input_gdf = input_gdf.reset_index(names=tmp_col)
+
+        # overlap GeoDataFrame
+        overlap_gdf = geopandas.overlay(
+            df1=input_gdf.copy(),
+            df2=geopandas.read_file(mask_file),
+            how='intersection'
+        )
+
+        # raise error if no overlapping geometry if found
+        if overlap_gdf.shape[0] == 0:
+            raise Exception('No overlapping geometry found')
+
+        # extract polygons index
+        overlap_gdf['tc_overlap_area'] = overlap_gdf.geometry.area
+        overlap_gdf = overlap_gdf.drop(
+            columns=['tc_actual_area']
+        )
+        overlap_gdf = overlap_gdf.merge(
+            right=input_gdf[[tmp_col, 'tc_actual_area']],
+            on=[tmp_col]
+        )
+        overlap_gdf[overlap_col] = 100 * overlap_gdf['tc_overlap_area'] / overlap_gdf['tc_actual_area']
+        greater_sign = operator.gt if greater_strict else operator.ge
+        extract_rows = overlap_gdf[greater_sign(overlap_gdf[overlap_col], overlap_percent)][tmp_col].tolist()
+
+        # saving GeoDataFrame
+        extract_gdf = input_gdf[input_gdf[tmp_col].isin(extract_rows)].reset_index(drop=True)
+        extract_gdf = extract_gdf.merge(
+            right=overlap_gdf[[tmp_col, overlap_col]],
+            on=[tmp_col]
+        )
+        extract_gdf[overlap_col] = extract_gdf[overlap_col].round(2)
+        extract_gdf = extract_gdf.drop(
+            columns=[tmp_col, 'tc_actual_area']
+        )
         extract_gdf.to_file(output_file)
 
         return extract_gdf
