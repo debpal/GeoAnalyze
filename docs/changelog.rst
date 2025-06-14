@@ -2,11 +2,21 @@
 Release Notes
 ===============
 
+Version 1.2.3
+---------------
+
+* **Release date:** 14-Jun-2025.
+
+* **Features:** 
+
+    * Added a new function the :class:`GeoAnalyze.Raster` class.
+    * Fixed compatibility issue with Python versions.
+
 
 Version 1.2.2
 ---------------
 
-* **Release date:** 06-May-2025.
+* **Release date:** 06-Jun-2025.
 
 * **Features:** Added assistant functions to existing methods in the :class:`GeoAnalyze.Stream` class, allowing developers to retrieve outputs directly without saving them to a file.
 
