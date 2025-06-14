@@ -27,11 +27,19 @@ To generate the stream network raster from the shapefile produced in the :ref:`D
 
 .. code-block:: python
 
-    # stream raster
+    # stream raster with a mask file
     raster.array_from_geometries(
         shape_file=r"C:\users\username\folder\stream_lines.shp",
         value_column='flw_id',
         mask_file=r"C:\users\username\folder\dem_clipped.tif",
+        output_file=r"C:\users\username\folder\stream_lines.tif"
+    )
+    
+    # stream raster without mask
+    raster.array_from_geometries_without_mask(
+        shape_file=r"C:\users\username\folder\stream_lines.shp",
+        value_column='flw_id',
+        resolution=16,
         output_file=r"C:\users\username\folder\stream_lines.tif"
     )
 
