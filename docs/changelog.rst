@@ -9,7 +9,7 @@ Version 1.2.3
 
 * **Features:** 
 
-    * Added a new function the :class:`GeoAnalyze.Raster` class.
+    * Added a new function to the :class:`GeoAnalyze.Raster` class.
     * Fixed compatibility issue with Python versions.
 
 
