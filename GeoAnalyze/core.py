@@ -190,17 +190,3 @@ class Core:
         }
 
         return resampling_dictionary
-
-    def _github_action(
-        self,
-        integer: int
-    ) -> str:
-
-        '''
-        A simple function that converts an integer to a string,
-        which can trigger a GitHub action due to the modification of a '.py' file.
-        '''
-
-        output = str(integer)
-
-        return output
