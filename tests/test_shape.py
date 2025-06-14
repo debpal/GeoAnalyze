@@ -183,6 +183,16 @@ def test_functions(
             overlap_percent=50
         )
         assert len(extract_gdf) == 13
+        # array from geometries without mask
+        output_profile = GeoAnalyze.Raster().array_from_geometries_without_mask(
+            shape_file=os.path.join(tmp_dir, 'dem_mask_boundary.shp'),
+            value_column='bid',
+            resolution=16,
+            output_file=os.path.join(tmp_dir, 'dem_mask_boundary.tif')
+        )
+        assert output_profile['driver'] == 'GTiff'
+        assert output_profile['height'] == 3923
+        assert output_profile['width'] == 3551
         # error test extracting geometries by overlap threshold
         disconnect_box = shapely.box(
             xmin=boundary_gdf.total_bounds[2] + 1000,

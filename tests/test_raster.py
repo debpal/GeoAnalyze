@@ -293,6 +293,15 @@ def test_error_raster_file_driver(
             output_file='stream.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
+    # array from geometries without mask
+    with pytest.raises(Exception) as exc_info:
+        raster.array_from_geometries_without_mask(
+            shape_file='dem_mask_boundary.shp',
+            value_column='bid',
+            resolution=16,
+            output_file='dem_mask_boundary.tifff'
+        )
+    assert exc_info.value.args[0] == message['error_driver']
     # raster overlaid with geometries
     with pytest.raises(Exception) as exc_info:
         raster.overlaid_with_geometries(

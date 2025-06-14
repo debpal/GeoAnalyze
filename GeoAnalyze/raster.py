@@ -1064,6 +1064,173 @@ class Raster:
 
         return output_profile
 
+    def array_from_geometries_without_mask(
+        self,
+        shape_file: str,
+        value_column: str,
+        resolution: float,
+        output_file: str,
+        select_values: typing.Optional[list[float]] = None,
+        all_touched: bool = True,
+        dtype: str = 'int16',
+        nodata: float = -9999,
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Converts selected geometries from a shapefile into a raster array
+        with a specified resolution. The raster values are taken from a specified column
+        in the shapefile. If no specific value is provided, all values in the column will be used.
+        The output raster uses the Coordinate Reference System (CRS) of the input shapefile.
+
+        Parameters
+        ----------
+        shape_file : str
+            Path to the input shapefile containing the geometries.
+
+        value_column : str
+            Column name that contains integer or float values
+            to be inserted into the raster array.
+
+        resolution : float
+            Spatial resolution (in meters) of the output raster.
+
+        output_file : str
+            Path to save the output raster file.
+
+        select_values : list, optional
+            A list of specific float values from the selected column to include.
+            If None, all values from the selected column are used.
+
+        all_touched : bool, optional
+            If True, all pixels touched by geometries will be considered;
+            otherwise, only pixels whose center is within the geometries will be considered.
+            Default is True.
+
+        dtype : str, optional
+            Data type of the output raster. Default is 'int16'.
+
+        nodata : float, optional
+            NoData value to assign to areas not covered by input geometries. Default is -9999.
+
+        Returns
+        -------
+        profile
+            A profile containing metadata about the output raster.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # input shapes
+        gdf = geopandas.read_file(shape_file)
+        gdf = gdf if select_values is None else gdf[gdf[value_column].isin(select_values)].reset_index(drop=True)
+
+        # bounds of GeoDataFrame
+        minx, miny, maxx, maxy = gdf.total_bounds
+
+        # width and height of raster array
+        width = int((maxx - minx) / resolution)
+        height = int((maxy - miny) / resolution)
+
+        # raster array transform
+        transform = rasterio.transform.from_origin(
+            west=minx,
+            north=maxy,
+            xsize=resolution,
+            ysize=resolution
+        )
+
+        # array from geometries
+        output_array = rasterio.features.rasterize(
+            shapes=zip(gdf.geometry, gdf[value_column]),
+            out_shape=(height, width),
+            transform=transform,
+            all_touched=all_touched,
+            fill=nodata,
+            dtype=dtype
+        )
+
+        # output raster profile
+        raster_profile = {
+            'dtype': dtype,
+            'nodata': nodata,
+            'width': width,
+            'height': height,
+            'count': 1,
+            'crs': gdf.crs,
+            'transform': transform,
+            'tiled': True,
+            'blockxsize': 256,
+            'blockysize': 256,
+            'compress': 'lzw'
+        }
+
+        # saving output raster
+        with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
+            output_raster.write(output_array, 1)
+            output_profile = output_raster.profile
+
+        return output_profile
+
+    def array_to_geometries(
+        self,
+        raster_file: str,
+        select_values: tuple[float, ...],
+        shape_file: str,
+    ) -> geopandas.GeoDataFrame:
+
+        '''
+        Extract geometries from a raster array for the selected values.
+
+        Parameters
+        ----------
+        raster_file : str
+            Path to the input raster file.
+
+        select_values : tuple
+            A tuple of selected raster values. All raster values
+            will be selected if the input tuple is empty.
+
+        shape_file : str
+            Path to save the output shapefile.
+
+        Returns
+        -------
+        GeoDataFrame
+            A GeoDataFrame containing the extracted geometries
+            and their corresponding raster values.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_ogr_driver(shape_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # geometries from raster array
+        with rasterio.open(raster_file) as input_raster:
+            raster_profile = input_raster.profile
+            nodata = raster_profile['nodata']
+            raster_array = input_raster.read(1)
+            select_values = select_values if len(select_values) > 0 else tuple(numpy.unique(raster_array[raster_array != nodata]))
+            shapes = rasterio.features.shapes(
+                source=raster_array,
+                mask=numpy.isin(raster_array, select_values),
+                transform=raster_profile['transform'],
+                connectivity=8
+            )
+            shapes = [
+                {'geometry': geom, 'properties': {'rst_val': val}} for geom, val in shapes
+            ]
+            gdf = geopandas.GeoDataFrame.from_features(
+                features=shapes,
+                crs=raster_profile['crs']
+            )
+            gdf.to_file(shape_file)
+
+        return gdf
+
     def overlaid_with_geometries(
         self,
         input_file: str,
@@ -1342,63 +1509,6 @@ class Raster:
                     output = list(numpy.unique(output_array[output_array != output_raster.nodata]))
 
         return output
-
-    def array_to_geometries(
-        self,
-        raster_file: str,
-        select_values: tuple[float, ...],
-        shape_file: str,
-    ) -> geopandas.GeoDataFrame:
-
-        '''
-        Extract geometries from a raster array for the selected values.
-
-        Parameters
-        ----------
-        raster_file : str
-            Path to the input raster file.
-
-        select_values : tuple
-            A tuple of selected raster values. All raster values
-            will be selected if the input tuple is empty.
-
-        shape_file : str
-            Path to save the output shapefile.
-
-        Returns
-        -------
-        GeoDataFrame
-            A GeoDataFrame containing the extracted geometries
-            and their corresponding raster values.
-        '''
-
-        # check validity of output file path
-        check_file = Core().is_valid_ogr_driver(shape_file)
-        if check_file is False:
-            raise Exception('Could not retrieve driver from the file path.')
-
-        # geometries from raster array
-        with rasterio.open(raster_file) as input_raster:
-            raster_profile = input_raster.profile
-            nodata = raster_profile['nodata']
-            raster_array = input_raster.read(1)
-            select_values = select_values if len(select_values) > 0 else tuple(numpy.unique(raster_array[raster_array != nodata]))
-            shapes = rasterio.features.shapes(
-                source=raster_array,
-                mask=numpy.isin(raster_array, select_values),
-                transform=raster_profile['transform'],
-                connectivity=8
-            )
-            shapes = [
-                {'geometry': geom, 'properties': {'rst_val': val}} for geom, val in shapes
-            ]
-            gdf = geopandas.GeoDataFrame.from_features(
-                features=shapes,
-                crs=raster_profile['crs']
-            )
-            gdf.to_file(shape_file)
-
-        return gdf
 
     def merging_files(
         self,
