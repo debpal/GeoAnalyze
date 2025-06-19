@@ -134,6 +134,21 @@ To reproject rasters and shapefiles to a different Coordinate Reference System (
     )
     
 
+Generating Boundaries of a Raster
+-----------------------------------
+
+To generate the boundary polygons of a raster, use the following code:
+
+
+.. code-block:: python
+
+    # extracting raster boundaries
+    raster.boundary_polygon(
+        raster_file=r"C:\users\username\folder\dem.tif",
+        shape_file=r"C:\users\username\folder\dem_boundary.shp"
+    )
+    
+
 Trimming a Raster
 --------------------
 
@@ -152,32 +167,17 @@ To trim rows and columns that contain only NoData values, use the following code
 Extending a Raster
 --------------------
 
-To extend a raster to match the spatial extent of a mask raster, use the following code:
+To extend a raster and reclassifty the values outside its boundary, use the following code:
 
 
 .. code-block:: python
 
-    # extending raster to the extend of the mask raster
-    raster.extension_to_mask_with_fill_value(
-        input_file=r"C:\users\username\folder\input.tif",
-        mask_file=r"C:\users\username\folder\mask.tif",
-        fill_value=1,
-        output_file=r"C:\users\username\folder\input_extended.tif"
-    )
-
-
-Generating Boundaries of a Raster
------------------------------------
-
-To generate the boundary polygons of a raster, use the following code:
-
-
-.. code-block:: python
-
-    # extracting raster boundaries
-    raster.boundary_polygon(
-        raster_file=r"C:\users\username\folder\dem.tif",
-        shape_file=r"C:\users\username\folder\dem_boundary.shp"
+    # extend an area raster using an extent raster
+    raster.reclassify_value_outside_boundary(
+        area_file=r"C:\users\username\folder\area.tif",
+        extent_file=r"C:\users\username\folder\extent.tif",
+        outside_value=1,
+        output_file=r"C:\users\username\folder\area_extended.tif"
     )
     
     
