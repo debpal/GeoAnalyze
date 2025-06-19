@@ -1177,8 +1177,8 @@ class Raster:
     def array_to_geometries(
         self,
         raster_file: str,
-        select_values: tuple[float, ...],
         shape_file: str,
+        select_values: tuple[float, ...] = ()
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -1189,12 +1189,12 @@ class Raster:
         raster_file : str
             Path to the input raster file.
 
-        select_values : tuple
-            A tuple of selected raster values. All raster values
-            will be selected if the input tuple is empty.
-
         shape_file : str
             Path to save the output shapefile.
+
+        select_values : tuple, optional
+            A tuple of selected raster values. All raster values
+            will be selected if the tuple is left empty by default.
 
         Returns
         -------
@@ -1418,8 +1418,6 @@ class Raster:
         check_file = Core().is_valid_raster_driver(output_file)
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
-        else:
-            pass
 
         # constant raster array
         with rasterio.open(input_file) as input_raster:
@@ -1437,25 +1435,25 @@ class Raster:
 
     def reclassify_value_outside_boundary(
         self,
-        input_file: str,
         area_file: str,
+        extent_file: str,
         outside_value: float,
         output_file: str
     ) -> list[float]:
 
         '''
-        Reclassifies values outside a specified area in the input raster,
-        based on the corresponding area raster. Both rasters must share the same
+        Reclassifies values outside a specified area in the input raster using
+        an extent raster as a mask. Both rasters must share the same
         cell alignment, coordinate reference system (CRS), and pixel resolution;
         otherwise, the result may be incorrect.
 
         Parameters
         ----------
-        input_file : str
-            Path to the input raster file.
-
         area_file : str
-            Path to the area raster file containing any type of values.
+            Path to the raster file representing the area of interest.
+
+        extent_file : str
+            Path to the extent raster file that encompasses the area raster.
 
         outside_value : float
             The value to assign to cells outside the specified area.
@@ -1476,35 +1474,31 @@ class Raster:
             raise Exception('Could not retrieve driver from the file path.')
 
         # input array
-        with rasterio.open(input_file) as input_raster:
-            raster_profile = input_raster.profile
-            raster_array = input_raster.read(1)
-            raster_left = input_raster.bounds.left
-            raster_top = input_raster.bounds.top
+        with rasterio.open(extent_file) as extent_raster:
+            extent_profile = extent_raster.profile
+            extent_array = extent_raster.read(1)
             # area array
             with rasterio.open(area_file) as area_raster:
                 area_array = area_raster.read(1)
-                area_left = area_raster.bounds.left
-                area_top = area_raster.bounds.top
                 # resized area array
-                row_offset = round((raster_top - area_top) / - raster_profile['transform'].e)
-                col_offset = round((area_left - raster_left) / raster_profile['transform'].a)
+                row_offset = round((extent_raster.bounds.top - area_raster.bounds.top) / - extent_profile['transform'].e)
+                col_offset = round((area_raster.bounds.left - extent_raster.bounds.left) / extent_profile['transform'].a)
                 resized_array = numpy.full(
-                    shape=raster_array.shape,
+                    shape=extent_array.shape,
                     fill_value=area_raster.nodata,
                     dtype=area_array.dtype
                 )
                 resized_array[row_offset:row_offset + area_array.shape[0], col_offset:col_offset + area_array.shape[1]] = area_array
                 # saving output raster
                 output_array = numpy.full(
-                    shape=raster_array.shape,
+                    shape=extent_array.shape,
                     fill_value=outside_value,
-                    dtype=raster_profile['dtype']
+                    dtype=extent_profile['dtype']
                 )
                 mask_array = resized_array != area_raster.nodata
-                output_array[mask_array] = raster_array[mask_array]
-                output_array[raster_array == raster_profile['nodata']] = raster_profile['nodata']
-                with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
+                output_array[mask_array] = resized_array[mask_array]
+                output_array[extent_array == extent_profile['nodata']] = extent_profile['nodata']
+                with rasterio.open(output_file, 'w', **extent_profile) as output_raster:
                     output_raster.write(output_array, 1)
                     output = list(numpy.unique(output_array[output_array != output_raster.nodata]))
 
@@ -1583,97 +1577,6 @@ class Raster:
         # close the split rasters
         for raster in split_rasters:
             raster.close()
-
-        return output_profile
-
-    def extension_to_mask_with_fill_value(
-        self,
-        input_file: str,
-        mask_file: str,
-        fill_value: float,
-        output_file: str,
-        dtype: typing.Optional[str] = None,
-        nodata: typing.Optional[float] = None
-    ) -> rasterio.profiles.Profile:
-
-        '''
-        Extends the input raster array to match the spatial extent of the mask raster,
-        using a specified fill value for the area between the input and mask raster extents.
-        The area covered by the mask raster must fully contain the input raster. Both rasters
-        must share the same cell alignment, coordinate reference system (CRS),
-        and pixel resolution; otherwise, the result may be incorrect.
-
-        Parameters
-        ----------
-        input_file : str
-            Path to the input raster file.
-
-        mask_file : str
-            Path to the mask raster file containing any type of values,
-            defining the spatial extent and resolution of the output raster.
-
-        fill_value : float
-            The value to assign to cells outside the extent
-            of the input raster but within the extent of the mask raster.
-
-        output_file : str
-            Path to save the output raster file.
-
-        dtype : str, optional
-            Data type of the output raster.
-            If None, the data type of the input raster is retained.
-
-        nodata : int, optional
-            NoData value to assign in the output raster.
-            If None, the NoData value of the input raster is retained.
-
-        Returns
-        -------
-        profile
-            A metadata profile containing information about the output raster.
-        '''
-
-        # check output file
-        check_file = Core().is_valid_raster_driver(output_file)
-        if check_file is False:
-            raise Exception('Could not retrieve driver from the file path.')
-
-        # read input raster
-        with rasterio.open(input_file) as input_raster:
-            raster_profile = input_raster.profile
-            raster_array = input_raster.read(1)
-            raster_shape = input_raster.shape
-            raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
-            # read mask raster
-            with rasterio.open(mask_file) as mask_raster:
-                mask_profile = mask_raster.profile
-                mask_array = mask_raster.read(1) != mask_profile['nodata']
-                # extended array filled by input value
-                output_array = numpy.full(
-                    shape=mask_raster.shape,
-                    fill_value=raster_profile['nodata'],
-                    dtype=raster_profile['dtype']
-                )
-                row_offset = (mask_raster.bounds.top - input_raster.bounds.top) / mask_raster.res[1]
-                col_offset = (input_raster.bounds.left - mask_raster.bounds.left) / mask_raster.res[0]
-                row_offset, col_offset = int(row_offset), int(col_offset)
-                output_array[
-                    row_offset:row_offset + raster_shape[0],
-                    col_offset:col_offset + raster_shape[1]
-                ] = raster_array
-                output_array[mask_array & (output_array == raster_profile['nodata'])] = fill_value
-                raster_profile['nodata'] = raster_profile['nodata'] if nodata is None else nodata
-                output_array[~mask_array] = raster_profile['nodata']
-                raster_profile.update(
-                    {
-                        'height': mask_profile['height'],
-                        'width': mask_profile['width'],
-                        'transform': mask_profile['transform']
-                    }
-                )
-                with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
-                    output_raster.write(output_array, 1)
-                    output_profile = output_raster.profile
 
         return output_profile
 

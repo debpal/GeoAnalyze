@@ -330,8 +330,8 @@ def test_error_raster_file_driver(
     # raster reclassification outside boundary area
     with pytest.raises(Exception) as exc_info:
         raster.reclassify_value_outside_boundary(
-            input_file='subbasins.tif',
             area_file='subbasin_merge.tif',
+            extent_file='subbasins.tif',
             outside_value=6,
             output_file='subbasins_outside_area_0.tifff'
         )
@@ -349,15 +349,6 @@ def test_error_raster_file_driver(
         raster.merging_files(
             folder_path='folder_path',
             raster_file='subbasin_merge.tifff'
-        )
-    assert exc_info.value.args[0] == message['error_driver']
-    # raster extension to mask area
-    with pytest.raises(Exception) as exc_info:
-        raster.extension_to_mask_with_fill_value(
-            input_file='subbasin_merge.tif',
-            mask_file='dem.tif',
-            fill_value=1,
-            output_file='subbasin_merge_extended.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
     # raster value extraction by mask

@@ -173,8 +173,8 @@ def test_functions(
             output_file=os.path.join(tmp_dir, 'subbasins.tif')
         )
         output_list = raster.reclassify_value_outside_boundary(
-            input_file=os.path.join(tmp_dir, 'subbasins.tif'),
             area_file=os.path.join(tmp_dir, 'subbasin_merge.tif'),
+            extent_file=os.path.join(tmp_dir, 'subbasins.tif'),
             outside_value=6,
             output_file=os.path.join(tmp_dir, 'subbasins_outside_area_6.tif')
         )
@@ -182,14 +182,6 @@ def test_functions(
         assert 6 in output_list
         assert 8 in output_list
         assert 5 not in output_list
-        # raster extension to mask area
-        raster.extension_to_mask_with_fill_value(
-            input_file=os.path.join(tmp_dir, 'subbasin_merge.tif'),
-            mask_file=os.path.join(tmp_dir, 'dem.tif'),
-            fill_value=1,
-            output_file=os.path.join(tmp_dir, 'subbasin_merge_extended.tif')
-        )
-        assert raster.count_data_cells(raster_file=os.path.join(tmp_dir, 'subbasin_merge_extended.tif')) == 8308974
 
 
 def test_error_invalid_folder_path(

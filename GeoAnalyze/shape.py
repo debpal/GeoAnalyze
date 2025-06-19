@@ -403,7 +403,8 @@ class Shape:
     def boundary_box(
         self,
         input_file: str,
-        output_file: str
+        output_file: str,
+        buffer_length: float = 0
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -417,6 +418,9 @@ class Shape:
         output_file : str
             Path to the output shapefile where the bounding box polygon will be saved.
 
+        buffer_length : float, optional
+            Distance to expand the bounding box on all sides. Default is 0.
+
         Returns
         -------
         GeoDataFrame
@@ -428,11 +432,15 @@ class Shape:
         if check_file is False:
             raise Exception('Could not retrieve driver from the file path.')
 
-        # input GeoDataFrame
-        gdf = geopandas.read_file(input_file)
-
         # boundary box
-        box_boundary = shapely.box(*list(gdf.total_bounds))
+        gdf = geopandas.read_file(input_file)
+        minx, miny, maxx, maxy = gdf.total_bounds
+        box_boundary = shapely.box(
+            xmin=minx - buffer_length,
+            ymin=miny - buffer_length,
+            xmax=maxx + buffer_length,
+            ymax=maxy + buffer_length
+        )
 
         # GeoDataFrame
         box_gdf = geopandas.GeoDataFrame(
