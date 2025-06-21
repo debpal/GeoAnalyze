@@ -40,7 +40,9 @@ class Raster:
 
         with rasterio.open(raster_file) as input_raster:
             raster_array = input_raster.read(1)
-            valid_array = raster_array[raster_array != input_raster.nodata]
+            valid_array = raster_array[
+                (raster_array != input_raster.nodata) & (~numpy.isnan(raster_array))
+            ]
             output = {
                 'Minimum': numpy.min(valid_array),
                 'Maximum': numpy.max(valid_array),
@@ -1438,7 +1440,9 @@ class Raster:
         area_file: str,
         extent_file: str,
         outside_value: float,
-        output_file: str
+        output_file: str,
+        dtype: typing.Optional[str] = None,
+        nodata: typing.Optional[float] = None
     ) -> list[float]:
 
         '''
@@ -1461,6 +1465,14 @@ class Raster:
         output_file : str
             Path to save the modified output raster file.
 
+        dtype : str, optional
+            Data type of the output raster.
+            If None, the data type of the extent raster is retained.
+
+        nodata : float, optional
+            NoData value to assign in the output raster.
+            If None, the NoData value of the extent raster is retained.
+
         Returns
         -------
         list
@@ -1477,6 +1489,9 @@ class Raster:
         with rasterio.open(extent_file) as extent_raster:
             extent_profile = extent_raster.profile
             extent_array = extent_raster.read(1)
+            output_profile = extent_profile.copy()
+            output_profile['dtype'] = output_profile['dtype'] if dtype is None else dtype
+            output_profile['nodata'] = output_profile['nodata'] if nodata is None else nodata
             # area array
             with rasterio.open(area_file) as area_raster:
                 area_array = area_raster.read(1)
@@ -1486,19 +1501,22 @@ class Raster:
                 resized_array = numpy.full(
                     shape=extent_array.shape,
                     fill_value=area_raster.nodata,
-                    dtype=area_array.dtype
+                    dtype=output_profile['dtype']
                 )
-                resized_array[row_offset:row_offset + area_array.shape[0], col_offset:col_offset + area_array.shape[1]] = area_array
+                resized_array[
+                    row_offset:row_offset + area_array.shape[0],
+                    col_offset:col_offset + area_array.shape[1]
+                ] = area_array
                 # saving output raster
                 output_array = numpy.full(
                     shape=extent_array.shape,
                     fill_value=outside_value,
-                    dtype=extent_profile['dtype']
+                    dtype=output_profile['dtype']
                 )
                 mask_array = resized_array != area_raster.nodata
                 output_array[mask_array] = resized_array[mask_array]
-                output_array[extent_array == extent_profile['nodata']] = extent_profile['nodata']
-                with rasterio.open(output_file, 'w', **extent_profile) as output_raster:
+                output_array[extent_array == extent_profile['nodata']] = output_profile['nodata']
+                with rasterio.open(output_file, 'w', **output_profile) as output_raster:
                     output_raster.write(output_array, 1)
                     output = list(numpy.unique(output_array[output_array != output_raster.nodata]))
 
