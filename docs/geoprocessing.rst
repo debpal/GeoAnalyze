@@ -164,21 +164,25 @@ To trim rows and columns that contain only NoData values, use the following code
     )
     
     
-Extending a Raster
---------------------
+Extending a Raster Spatial Extent
+------------------------------------
 
-To extend a raster and reclassifty the values outside its boundary, use the following code:
+To extend the spatial extent of a raster and reclassify values outside its original boundary, use the following code:
 
 
 .. code-block:: python
 
-    # extend an area raster using an extent raster
+    # extend the spatial extent of an area raster using an extent raster
     raster.reclassify_value_outside_boundary(
         area_file=r"C:\users\username\folder\area.tif",
         extent_file=r"C:\users\username\folder\extent.tif",
         outside_value=1,
         output_file=r"C:\users\username\folder\area_extended.tif"
     )
+    
+.. note::
+    This function can also be used to fill missing values in the area raster by providing an extent raster 
+    that has the same spatial extent and contains valid values in the missing regions.
     
     
 Computing Raster Statistics
@@ -193,10 +197,6 @@ To compute basic statistics from a raster file, use the following code:
     raster.statistics_summary(
         raster_file=r"C:\users\username\folder\landuse.tif"
     )
-    
-    
-Computing Raster Statistics by Reference Zone
--------------------------------------------------
 
 To compute summary statistics based on reference zones, use the following code:
 
