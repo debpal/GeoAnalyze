@@ -74,6 +74,7 @@ This allows users to execute geoprocessing tasks more efficiently, reducing code
 - Generating boundary polygons from a raster
 - Reclassifying raster values
 - Trimming and extending rasters
+- Filling missing values in raster regions
 - Computing raster statistics
 - Counting unique raster values
 - Extracting raster values using a mask or range filter
