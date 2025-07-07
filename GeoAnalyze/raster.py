@@ -469,9 +469,8 @@ class Raster:
     ) -> rasterio.profiles.Profile:
 
         '''
-        Applies a linear transformation to raster values using the formula:
-
-        `output_array = scale * raster_array + offset`.
+        Applies a linear transformation to raster values :math:`x` using the formula :math:`y = ax + b`,
+        where :math:`a` and :math:`b` are the ``scale`` and ``offset`` input variables, respectively.
 
         Parameters
         ----------
@@ -1467,11 +1466,11 @@ class Raster:
 
         dtype : str, optional
             Data type of the output raster.
-            If None, the data type of the extent raster is retained.
+            If None, the data type of the area raster is retained.
 
         nodata : float, optional
             NoData value to assign in the output raster.
-            If None, the NoData value of the extent raster is retained.
+            If None, the NoData value of the area raster is retained.
 
         Returns
         -------
@@ -1489,11 +1488,14 @@ class Raster:
         with rasterio.open(extent_file) as extent_raster:
             extent_profile = extent_raster.profile
             extent_array = extent_raster.read(1)
-            output_profile = extent_profile.copy()
-            output_profile['dtype'] = output_profile['dtype'] if dtype is None else dtype
-            output_profile['nodata'] = output_profile['nodata'] if nodata is None else nodata
             # area array
             with rasterio.open(area_file) as area_raster:
+                area_profile = area_raster.profile
+                output_profile = area_profile.copy()
+                output_profile['width'] = extent_profile['width']
+                output_profile['height'] = extent_profile['height']
+                output_profile['dtype'] = output_profile['dtype'] if dtype is None else dtype
+                output_profile['nodata'] = output_profile['nodata'] if nodata is None else nodata
                 area_array = area_raster.read(1)
                 # resized area array
                 row_offset = round((extent_raster.bounds.top - area_raster.bounds.top) / - extent_profile['transform'].e)
