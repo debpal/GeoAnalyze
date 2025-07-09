@@ -2,6 +2,14 @@
 Release Notes
 ===============
 
+Version 1.2.5
+---------------
+
+* **Release date:** 09-Jul-2025.
+
+* **Feature:** Compatibility with the latest version of Python 3.13.
+
+
 Version 1.2.4
 ---------------
 
@@ -28,7 +36,7 @@ Version 1.2.2
 
 * **Release date:** 06-Jun-2025.
 
-* **Features:** Added assistant functions to existing methods in the :class:`GeoAnalyze.Stream` class, allowing developers to retrieve outputs directly without saving them to a file.
+* **Feature:** Added assistant functions to existing methods in the :class:`GeoAnalyze.Stream` class, allowing developers to retrieve outputs directly without saving them to a file.
 
 
 Version 1.2.1
@@ -64,7 +72,7 @@ Version 1.1.0
 
 * **Release date:** 05-Apr-2025.
 
-* **Features:** New functions introduced in the :class:`GeoAnalyze.Raster` class.
+* **Feature:** New functions introduced in the :class:`GeoAnalyze.Raster` class.
 
 * **Documentation:** Added a tutorial on how to use the newly introduced features.
 
@@ -99,7 +107,7 @@ Version 0.0.2
 
 * **Release date:** 10-Oct-2024.
 
-* **GitHub Actions Integration:**
+* **Features:**
 
     * Linting with `flake8` to enforce PEP8 code formatting.
     * Type checking with `mypy` to verify annotations throughout the codebase.
@@ -112,7 +120,7 @@ Version 0.0.1
 
 * **Release date:** 10-Oct-2024.
 
-* **Features:** Functionality for file operations.
+* **Feature:** Functionality for file operations.
 
 * **Documentation:** Added a tutorial on how to use the features.
 
