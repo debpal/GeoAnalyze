@@ -3,6 +3,17 @@ Release Notes
 ===============
 
 
+Version 1.3.0
+---------------
+
+* **Release date:** 02-Jun-2026.
+
+* **Features:** 
+
+    * Compatibility with the latest version of Python 3.14.
+    * Fixed bugs.
+
+
 Version 1.2.5
 ---------------
 
