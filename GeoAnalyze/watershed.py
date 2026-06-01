@@ -386,7 +386,7 @@ class Watershed:
         start_time = time.time()
         pour_gdf = flw_gdf.copy()
         pour_gdf['pour_coords'] = pour_gdf.geometry.apply(
-            lambda x: shapely.Point(x.coords[-2])
+            lambda x: x.coords[-2]
         )
         pour_gdf['geometry'] = pour_gdf.apply(
             lambda row: shapely.Point(row['pour_coords']),
@@ -436,19 +436,11 @@ class Watershed:
             ascending=[True],
             ignore_index=True
         )
-        subbasin_gdf['area_m2'] = subbasin_gdf.geometry.area.round(decimals=2)
-        # schema dictionary for polygons
-        polygon_schema = {
-            'geometry': 'Polygon',
-            'properties': {
-                flw_col: 'int',
-                'area_m2': 'float:19.1'
-            }
-        }
+        subbasin_gdf[flw_col] = subbasin_gdf[flw_col].astype(int)
+        subbasin_gdf['area_m2'] = subbasin_gdf.geometry.area
         subbasin_gdf.to_file(
             filename=os.path.join(folder_path, 'subbasins.shp'),
-            schema=polygon_schema,
-            engine='fiona'
+            engine='pyogrio'
         )
         required_time = round(time.time() - start_time, 1)
         print(

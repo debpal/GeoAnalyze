@@ -1071,53 +1071,56 @@ class Stream:
         if 'LineString' not in Core().shapefile_geometry_type(input_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
-        # temporary directory
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            # stream GeoDataFrame
-            stream_gdf = geopandas.read_file(input_file)
-            # connectivity to upstream segment identifiers
-            ul_df = self.connectivity_adjacent_upstream_segment(
-                stream_file=input_file,
-                stream_col=stream_col,
-                csv_file=os.path.join(tmp_dir, 'upstream_id.csv'),
-            )
-            ul_dict = {
-                key: df['us_id'].tolist() for key, df in ul_df.groupby(stream_col)
-            }
-            ul_ids = {
-                key: ([] if value == [-1] else value) for key, value in ul_dict.items()
-            }
-            ul_count = {
-                key: len(value) for key, value in ul_ids.items()
-            }
-            # compute Strahler order
-            strahler_order = ul_count.copy()
-            for i in stream_gdf[stream_col]:
-                # if no upstream link
-                if ul_count[i] == 0:
-                    strahler_order[i] = 1
-                else:
-                    # update strahler_order order if upstream link is present
-                    update_order = 0
-                    update_count = 0
-                    for j in ul_ids[i]:
-                        if strahler_order[j] > update_order:
-                            update_order = strahler_order[j]
-                            update_count = 1
-                        elif strahler_order[j] == update_order:
-                            update_count = update_count + 1
-                        else:
-                            pass
-                    if update_count > 1:
-                        strahler_order[i] = update_order + 1
+        # stream GeoDataFrame
+        stream_gdf = geopandas.read_file(input_file)
+
+        # connectivity to upstream segment identifiers
+        ul_df = self._connectivity_adjacent_upstream_segment(
+            stream_file=input_file,
+            stream_col=stream_col,
+            link_col='us_id',
+            unlinked_id=-1
+        )
+        ul_dict = {
+            key: df['us_id'].tolist() for key, df in ul_df.groupby(stream_col)
+        }
+        ul_ids = {
+            key: [] if value == [-1] else value for key, value in ul_dict.items()
+        }
+
+        # intial count dictionary for Strahler stream order
+        ul_count = {
+            key: len(value) for key, value in ul_ids.items()
+        }
+
+        # compute Strahler order
+        strahler_order = ul_count.copy()
+        for i in stream_gdf[stream_col]:
+            # if no upstream link
+            if ul_count[i] == 0:
+                strahler_order[i] = 1
+            else:
+                # update strahler_order order if upstream link is present
+                update_order = 0
+                update_count = 0
+                for j in ul_ids[i]:
+                    if strahler_order[j] > update_order:
+                        update_order = strahler_order[j]
+                        update_count = 1
+                    elif strahler_order[j] == update_order:
+                        update_count = update_count + 1
                     else:
-                        strahler_order[i] = update_order
-            # insert Strahler order into the stream GeoDataFrame
-            stream_gdf[order_col] = stream_gdf[stream_col].apply(
-                lambda x: strahler_order.get(x)
-            )
-            # saving output GeoDataFrame
-            stream_gdf.to_file(output_file)
+                        continue
+                if update_count > 1:
+                    strahler_order[i] = update_order + 1
+                else:
+                    strahler_order[i] = update_order
+        # insert Strahler order into the stream GeoDataFrame
+        stream_gdf[order_col] = stream_gdf[stream_col].apply(
+            lambda x: strahler_order.get(x)
+        )
+        # saving output GeoDataFrame
+        stream_gdf.to_file(output_file)
 
         return stream_gdf
 
@@ -1167,51 +1170,54 @@ class Stream:
         if 'LineString' not in Core().shapefile_geometry_type(input_file):
             raise Exception('Input shapefile must have geometries of type LineString.')
 
-        # temporary directory
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            # stream GeoDataFrame
-            stream_gdf = geopandas.read_file(input_file)
-            # connectivity to upstream segment identifiers
-            ul_df = self.connectivity_adjacent_upstream_segment(
-                stream_file=input_file,
-                stream_col=stream_col,
-                csv_file=os.path.join(tmp_dir, 'upstream_id.csv'),
-            )
-            ul_dict = {
-                key: df['us_id'].tolist() for key, df in ul_df.groupby(stream_col)
-            }
-            ul_ids = {
-                key: ([] if value == [-1] else value) for key, value in ul_dict.items()
-            }
-            # initialize all segments with 0 Shreve order
-            shreve_order = {
-                i: 0 for i in stream_gdf[stream_col]
-            }
-            # find segments with no upstream link and set Shreve order to 1
-            for i in shreve_order:
-                if len(ul_ids[i]) == 0:
-                    shreve_order[i] = 1
-            # iterate until Shreve order of all segments are updated
-            stream_ids = stream_gdf[stream_col].tolist()
-            while len(stream_ids) > 0:
-                for i in stream_ids:
-                    # get upstream link of stream segement i
-                    i_ul = ul_ids[i]
-                    # check if all upstream segments have Shreve order greater than 0
-                    if all(shreve_order[j] > 0 for j in i_ul):
-                        # no change of Shreve order if upstream link is not found
-                        if len(i_ul) == 0:
-                            pass
-                        # add Shreve orders of upstream links
-                        else:
-                            shreve_order[i] = sum(shreve_order[j] for j in i_ul)
-                        stream_ids.remove(i)
-            # insert Shreve order into the stream GeoDataFrame
-            stream_gdf[order_col] = stream_gdf[stream_col].apply(
-                lambda x: shreve_order.get(x)
-            )
-            # saving output GeoDataFrame
-            stream_gdf.to_file(output_file)
+        # stream GeoDataFrame
+        stream_gdf = geopandas.read_file(input_file)
+
+        # connectivity to upstream segment identifiers
+        ul_df = self._connectivity_adjacent_upstream_segment(
+            stream_file=input_file,
+            stream_col=stream_col,
+            link_col='us_id',
+            unlinked_id=-1
+        )
+        ul_dict = {
+            key: df['us_id'].tolist() for key, df in ul_df.groupby(stream_col)
+        }
+        ul_ids = {
+            key: [] if value == [-1] else value for key, value in ul_dict.items()
+        }
+
+        # initialize all segments with 0 Shreve order
+        shreve_order = {
+            i: 0 for i in stream_gdf[stream_col]
+        }
+
+        # find segments with no upstream link and set Shreve order to 1
+        for i in shreve_order:
+            if len(ul_ids[i]) == 0:
+                shreve_order[i] = 1
+
+        # iterate until Shreve order of all segments are updated
+        stream_ids = stream_gdf[stream_col].tolist()
+        while len(stream_ids) > 0:
+            for i in stream_ids:
+                # get upstream link of stream segement i
+                i_ul = ul_ids[i]
+                # check if all upstream segments have Shreve order greater than 0
+                if all(shreve_order[j] > 0 for j in i_ul):
+                    # no change of Shreve order if upstream link is not found
+                    if len(i_ul) == 0:
+                        pass
+                    # add Shreve orders of upstream links
+                    else:
+                        shreve_order[i] = sum(shreve_order[j] for j in i_ul)
+                    stream_ids.remove(i)
+        # insert Shreve order into the stream GeoDataFrame
+        stream_gdf[order_col] = stream_gdf[stream_col].apply(
+            lambda x: shreve_order.get(x)
+        )
+        # saving output GeoDataFrame
+        stream_gdf.to_file(output_file)
 
         return stream_gdf
 

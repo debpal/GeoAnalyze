@@ -994,8 +994,9 @@ class Shape:
         input_file: str,
         geometry_type: str,
         output_file: str,
-        column_list: list[str] | None = None,
-        layer_column: str = 'layer'
+        column_list: typing.Optional[list[str]] = None,
+        layer_column: str = 'layer',
+        rename_columns: dict[str, str] = dict()
     ) -> geopandas.GeoDataFrame:
 
         '''
@@ -1019,6 +1020,9 @@ class Shape:
 
         layer_column : str, optional
             Name of the column that will store the layer names in the aggregated GeoDataFrame. Default is 'layer'.
+
+        rename_columns : dict, optional
+            A dictionary used to rename columns in the output GeoDataFrame. Default is an empty dictionary.
 
         Returns
         -------
@@ -1076,6 +1080,11 @@ class Shape:
                 objs=gdf_list,
                 ignore_index=True
             )
+        )
+
+        # rename columns if any
+        gdf = gdf.rename(
+            columns=rename_columns
         )
 
         # saving GeoDataFrame

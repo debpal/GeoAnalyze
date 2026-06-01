@@ -1676,7 +1676,7 @@ class Raster:
                 # saving output raster
                 raster_profile['nodata'] = raster_profile['nodata'] if nodata is None else nodata
                 output_array[raster_array == raster_nodata] = raster_profile['nodata']
-                # raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
+                raster_profile['dtype'] = raster_profile['dtype'] if dtype is None else dtype
                 with rasterio.open(output_file, 'w', **raster_profile) as output_raster:
                     output_raster.write(output_array, 1)
                     output = list(numpy.unique(output_array[output_array != output_raster.nodata]))
