@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools"]
+requires = [
+    "setuptools",
+    "wheel"
+]
 build-backend = "setuptools.build_meta"
 
 
@@ -13,7 +16,6 @@ authors = [
 dependencies = [
     "geopandas",
     "rasterio",
-    "fiona",
     "pyflwdir",
     "matplotlib"
 ]
@@ -25,6 +27,7 @@ classifiers = [
 	"Programming Language :: Python :: 3.11",
 	"Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 	"Operating System :: OS Independent",
 	"Intended Audience :: Education",
     "Intended Audience :: Science/Research",
@@ -33,7 +36,7 @@ classifiers = [
 	"Topic :: Scientific/Engineering :: Hydrology"
 ]
 license = "MIT"
-license-files = ["LICEN[CS]E.*"]
+license-files = ["LICENSE"]
 keywords = [
     "GIS",
     "Watershed",
