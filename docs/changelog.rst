@@ -2,6 +2,7 @@
 Release Notes
 ===============
 
+
 Version 1.2.5
 ---------------
 
@@ -19,6 +20,7 @@ Version 1.2.4
 
     * Removed a duplicate function from the :class:`GeoAnalyze.Raster` class.
     * Fixed minor bugs.
+
 
 Version 1.2.3
 ---------------
