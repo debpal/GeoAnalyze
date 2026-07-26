@@ -9,7 +9,7 @@
 
 
 [![flake8](https://github.com/debpal/GeoAnalyze/actions/workflows/linting.yml/badge.svg)](https://github.com/debpal/GeoAnalyze/actions/workflows/linting.yml) [![mypy](https://github.com/debpal/GeoAnalyze/actions/workflows/typing.yml/badge.svg)](https://github.com/debpal/GeoAnalyze/actions/workflows/typing.yml) [![pytest](https://github.com/debpal/GeoAnalyze/actions/workflows/testing.yml/badge.svg)](https://github.com/debpal/GeoAnalyze/actions/workflows/testing.yml)
-![Read the Docs](https://img.shields.io/readthedocs/GeoAnalyze) 
+![Read the Docs](https://img.shields.io/readthedocs/geoanalyze) 
 
 
 ![GitHub Release Date](https://img.shields.io/github/release-date/debpal/GeoAnalyze)
