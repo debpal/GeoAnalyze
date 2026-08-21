@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     "geopandas",
     "rasterio",
-    "pyflwdir==0.5.11",
+    "pyflwdir",
     "matplotlib",
     "numba==0.65.1",
     "affine==2.4.0"
