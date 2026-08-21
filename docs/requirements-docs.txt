@@ -1,5 +1,5 @@
 sphinx_rtd_theme
 geopandas
 rasterio
-pyflwdir==0.5.11
+pyflwdir
 matplotlib
