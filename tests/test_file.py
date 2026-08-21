@@ -118,4 +118,4 @@ def test_extract_specific_extension(
 
 def test_github_action():
 
-    assert str(2) == '2'
+    assert str(1) == '1'
