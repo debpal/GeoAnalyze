@@ -121,6 +121,13 @@ def test_functions(
             dtype='float32'
         )
         assert output_profile['nodata'] == 0
+        # raster Nan NoData to specific NoData
+        output_profile = raster.nodata_value_change(
+            input_file=os.path.join(tmp_dir, 'stream_nodata_to_0.tif'),
+            nodata=-9999,
+            output_file=os.path.join(tmp_dir, 'stream_nan_to_numeric_nodata.tif'),
+        )
+        assert output_profile['nodata'] == -9999
         # raster NoData to valid value change
         output_profile = raster.nodata_to_valid_value(
             input_file=os.path.join(tmp_dir, 'stream_nodata_to_0.tif'),

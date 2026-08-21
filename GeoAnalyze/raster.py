@@ -758,6 +758,51 @@ class Raster:
 
         return output_profile
 
+    def nodata_nan_to_numeric(
+        self,
+        input_file: str,
+        nodata: float,
+        output_file: str
+    ) -> rasterio.profiles.Profile:
+
+        '''
+        Replaces NaN NoData in a raster with a specified numeric NoData value.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to the input raster file.
+
+        nodata : float
+            New NoData value to replace the NaN values.
+
+        output_file : str
+            Path to save the output raster file.
+
+        Returns
+        -------
+        profile
+            A profile containing metadata about the output raster.
+        '''
+
+        # check validity of output file path
+        check_file = Core().is_valid_raster_driver(output_file)
+        if check_file is False:
+            raise Exception('Could not retrieve driver from the file path.')
+
+        # saving raster after replacing Nan to numeric NoData value
+        with rasterio.open(input_file) as input_raster:
+            raster_profile = input_raster.profile
+            raster_array = input_raster.read(1)
+            mask_array = numpy.isnan(raster_array)
+            raster_array[mask_array] = nodata
+            raster_profile['nodata'] = nodata
+            with rasterio.open(output_file, mode='w', **raster_profile) as output_raster:
+                output_raster.write(raster_array, 1)
+                output_profile = output_raster.profile
+
+        return output_profile
+
     def nodata_value_change(
         self,
         input_file: str,
@@ -1494,6 +1539,7 @@ class Raster:
                 output_profile = area_profile.copy()
                 output_profile['width'] = extent_profile['width']
                 output_profile['height'] = extent_profile['height']
+                output_profile['transform'] = extent_profile['transform']
                 output_profile['dtype'] = output_profile['dtype'] if dtype is None else dtype
                 output_profile['nodata'] = output_profile['nodata'] if nodata is None else nodata
                 area_array = area_raster.read(1)
