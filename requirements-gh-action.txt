@@ -3,6 +3,6 @@ pytest-cov
 geopandas
 rasterio
 pyflwdir
-numba==0.65.1
+numba
 affine==2.4.0
 matplotlib

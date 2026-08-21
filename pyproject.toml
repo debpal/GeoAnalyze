@@ -18,7 +18,7 @@ dependencies = [
     "rasterio",
     "pyflwdir",
     "matplotlib",
-    "numba==0.65.1",
+    "numba",
     "affine==2.4.0"
 ]
 readme = "README.md"
