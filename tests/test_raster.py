@@ -122,7 +122,7 @@ def test_functions(
         )
         assert output_profile['nodata'] == 0
         # raster Nan NoData to specific NoData
-        output_profile = raster.nodata_value_change(
+        output_profile = raster.nodata_nan_to_numeric(
             input_file=os.path.join(tmp_dir, 'stream_nodata_to_0.tif'),
             nodata=-9999,
             output_file=os.path.join(tmp_dir, 'stream_nan_to_numeric_nodata.tif'),
@@ -256,6 +256,14 @@ def test_error_raster_file_driver(
             input_file='stream.tif',
             target_value=[1, 9],
             output_file='stream_NoData.tifff',
+        )
+    assert exc_info.value.args[0] == message['error_driver']
+    # NoData value change
+    with pytest.raises(Exception) as exc_info:
+        raster.nodata_nan_to_numeric(
+            input_file='dem.tif',
+            nodata=0,
+            output_file='dem_NoData_0.tifff'
         )
     assert exc_info.value.args[0] == message['error_driver']
     # NoData value change
