@@ -2,6 +2,6 @@ pytest
 pytest-cov
 geopandas
 rasterio
-pyflwdir
+pyflwdir==0.5.11
 numba==0.65.1
 matplotlib
