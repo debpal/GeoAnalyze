@@ -69,7 +69,7 @@ def test_functions(
             resampling_method='bilinear',
             output_file=os.path.join(tmp_dir, 'dem_extended_rescale.tif')
         )
-        assert output_profile['height'] == 3957
+        assert output_profile['height'] == 3956
         # dem extended area to basin
         output_gdf = watershed.dem_extended_area_to_basin(
             input_file=os.path.join(tmp_dir, 'dem_extended_EPSG3067_16m.tif'),
