@@ -417,40 +417,28 @@ class Raster:
 
         # rescaling resolution
         with rasterio.open(mask_file) as mask_raster:
-            mask_profile = mask_raster.profile
-            mask_resolution = mask_profile['transform'][0]
-            # output raster parameters
-            output_transform, output_width, output_height = rasterio.warp.calculate_default_transform(
-                src_crs=mask_raster.crs,
-                dst_crs=mask_raster.crs,
-                width=mask_raster.width,
-                height=mask_raster.height,
-                left=mask_raster.bounds.left,
-                bottom=mask_raster.bounds.bottom,
-                right=mask_raster.bounds.right,
-                top=mask_raster.bounds.top,
-                resolution=(mask_resolution,) * 2
-            )
+            mask_profile = mask_raster.profile.copy()
+
             with rasterio.open(input_file) as input_raster:
                 input_profile = input_raster.profile
-                # output raster profile
-                mask_profile.update(
-                    {
-                        'transform': output_transform,
-                        'width': output_width,
-                        'height': output_height,
-                        'dtype': input_profile['dtype'],
-                        'nodata': input_profile['nodata']
-                    }
-                )
+
+                # Enforce exact dimensions and transform of the mask raster
+                mask_profile.update({
+                    'transform': mask_raster.transform,
+                    'width': mask_raster.width,
+                    'height': mask_raster.height,
+                    'dtype': input_profile['dtype'],
+                    'nodata': input_profile['nodata']
+                })
+
                 # saving output raster
                 with rasterio.open(output_file, 'w', **mask_profile) as output_raster:
                     rasterio.warp.reproject(
                         source=rasterio.band(input_raster, 1),
                         destination=rasterio.band(output_raster, 1),
-                        src_transform=mask_raster.transform,
-                        src_crs=mask_raster.crs,
-                        dst_transform=output_transform,
+                        src_transform=input_raster.transform,
+                        src_crs=input_raster.crs,
+                        dst_transform=mask_raster.transform,
                         dst_crs=mask_raster.crs,
                         resampling=resampling_dict[resampling_method]
                     )
